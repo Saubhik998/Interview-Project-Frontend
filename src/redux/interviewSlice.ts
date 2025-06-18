@@ -2,15 +2,21 @@
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+// Define the structure for each answer
+interface Answer {
+  audio: string;       // URL to recorded audio
+  transcript: string;  // Transcribed text
+}
+
 // Define interview state structure
 interface InterviewState {
   jd: string;
   questions: string[];
   currentQuestionIndex: number;
-  answers: string[]; // Each answer maps to one question
+  answers: Answer[]; // Now stores audio + transcript per question
 }
 
-//  Initial mock state (replace questions via backend later)
+// Initial mock state (replace questions via backend later)
 const initialState: InterviewState = {
   jd: '',
   questions: [
@@ -21,7 +27,7 @@ const initialState: InterviewState = {
     "Where do you see yourself in 5 years?",
   ],
   currentQuestionIndex: 0,
-  answers: [],
+  answers: [], // Initially empty
 };
 
 // Create the interview slice with reducers
@@ -39,13 +45,16 @@ const interviewSlice = createSlice({
       state.currentQuestionIndex += 1;
     },
 
-    // New: Set answer at specific index
-    setAnswer: (state, action: PayloadAction<{ index: number; answer: string }>) => {
-      const { index, answer } = action.payload;
-      state.answers[index] = answer;
+    // Set answer at specific index with audio and transcript
+    setAnswer: (
+      state,
+      action: PayloadAction<{ index: number; audio: string; transcript: string }>
+    ) => {
+      const { index, audio, transcript } = action.payload;
+      state.answers[index] = { audio, transcript };
     },
 
-    // Reset everything to initial state
+    // Reset interview state
     resetInterview: () => initialState,
   },
 });
