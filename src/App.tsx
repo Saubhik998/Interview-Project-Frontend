@@ -1,34 +1,24 @@
-/**
- * App.tsx
- * ---------------------------
- * Main application entry point.
- * Uses React Router to navigate between:
- * - JDInput (Job Description Input screen)
- * - Interview (Audio interview interface)
- * - Report (Final report view)
- * ---------------------------
- */
+// Routing setup for app, including protected and public routes
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
-// Import your page components
 import JDInput from './components/JDInput';
 import Interview from './components/Interview';
 import Report from './components/Report';
+import Login from './auth/Login';
+import ProtectedRoute from './auth/ProtectedRoute';
 
 const App: React.FC = () => {
   return (
     <Router>
       <Routes>
-        {/* Route for the Job Description Input screen */}
-        <Route path="/" element={<JDInput />} />
+        {/* Public route for login */}
+        <Route path="/login" element={<Login />} />
 
-        {/* Route for the Interview screen */}
-        <Route path="/interview" element={<Interview />} />
-
-        {/* Route for the Report screen */}
-        <Route path="/report" element={<Report />} />
+        {/* Protected routes below require login */}
+        <Route path="/" element={<ProtectedRoute><JDInput /></ProtectedRoute>} />
+        <Route path="/interview" element={<ProtectedRoute><Interview /></ProtectedRoute>} />
+        <Route path="/report" element={<ProtectedRoute><Report /></ProtectedRoute>} />
       </Routes>
     </Router>
   );
