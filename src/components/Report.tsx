@@ -3,11 +3,10 @@
  * ------------------------------------------------
  * Displays a final summary after the interview:
  * - Job Description (optional)
- * - Questions with audio answers
+ * - Questions with audio + transcribed text
  * - Candidate fit score (mocked)
  * - Strengths, improvements, follow-up suggestions
  * ------------------------------------------------
- * Technologies: React, TypeScript, Bootstrap 5
  */
 
 import React from 'react';
@@ -15,7 +14,6 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 
 const Report: React.FC = () => {
-  // Get data from Redux
   const { jd, questions, answers } = useSelector((state: RootState) => state.interview);
 
   // Mocked scoring and feedback
@@ -35,27 +33,40 @@ const Report: React.FC = () => {
           <h1 className={`fw-bold ${score >= 75 ? 'text-success' : 'text-warning'}`}>{score} / 100</h1>
         </div>
 
-        {/* Job Description (optional) */}
+        {/* Job Description */}
         <div className="mb-4">
           <h5 className="text-muted">Job Description</h5>
           <p className="text-secondary">{jd || 'No JD available'}</p>
         </div>
 
-        {/* Questions and Answers with Audio */}
+        {/* Questions + Audio + Transcript */}
         <div className="mb-4">
           <h5 className="text-muted mb-3">Interview Questions & Answers</h5>
-          {questions.map((question, index) => (
-            <div key={index} className="mb-3">
-              <strong>Q{index + 1}:</strong> {question}
-              <div className="mt-2">
-                {answers[index] ? (
-                  <audio controls src={answers[index]} />
-                ) : (
-                  <span className="text-danger small">No answer recorded.</span>
-                )}
+          {questions.map((question, index) => {
+            const answer = answers[index];
+            return (
+              <div key={index} className="mb-4">
+                <strong>Q{index + 1}:</strong> {question}
+                <div className="mt-2">
+                  {answer ? (
+                    <>
+                      <audio controls src={answer.audio} className="mb-2" />
+                      <p className="text-secondary">
+                        <strong>Transcript:</strong>{' '}
+                        {answer.transcript ? (
+                          <span>{answer.transcript}</span>
+                        ) : (
+                          <span className="text-muted fst-italic">No transcript available.</span>
+                        )}
+                      </p>
+                    </>
+                  ) : (
+                    <span className="text-danger small">No answer recorded.</span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Strengths */}
@@ -94,7 +105,7 @@ const Report: React.FC = () => {
           </ul>
         </div>
 
-        {/* End Message */}
+        {/* Final Message */}
         <div className="text-center mt-4">
           <p className="text-muted">Interview complete. Thank you!</p>
         </div>
