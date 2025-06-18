@@ -50,7 +50,7 @@ const Report: React.FC = () => {
                 <div className="mt-2">
                   {answer ? (
                     <>
-                      <audio controls src={answer.audio} className="mb-2" />
+                      <audio data-testid="audio-player" controls src={answer.audio} className="mb-2" />
                       <p className="text-secondary">
                         <strong>Transcript:</strong>{' '}
                         {answer.transcript ? (
