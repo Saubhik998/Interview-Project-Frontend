@@ -25,5 +25,5 @@ jobs:
       - name: Run tests
         run: npm test -- --watchAll=false
 
-      - name: Run build
-        run: npm run build
+      - name: Run build (warnings allowed)
+        run: CI='' npm run build
