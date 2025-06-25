@@ -1,39 +1,67 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
-import { setAnswer } from '../redux/interviewSlice';
 import { useNavigate } from 'react-router-dom';
 import styles from '../css/Interview.module.css';
+import axios from 'axios';
+
+interface InitResponse {
+  message: string;
+  jd: string;
+  questions: string[];
+}
+
+interface AnswerPayload {
+  index: number;
+  question: string;
+  audioBase64: string;
+  transcript: string;
+}
 
 const Interview: React.FC = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { questions } = useSelector((state: RootState) => state.interview);
+  const { jd } = useSelector((state: RootState) => state.interview);
 
+  const [questions, setQuestions] = useState<string[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [timer, setTimer] = useState(600);
-  const [transcript, setTranscript] = useState('');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef<string>(''); // NEW
 
-  // Speak question using female voice
+  // Initialize interview
+  useEffect(() => {
+    const initInterview = async () => {
+      try {
+        const res = await axios.post<InitResponse>('/api/interview/init', jd, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        setQuestions(res.data.questions);
+      } catch (err) {
+        console.error('Error initializing interview:', err);
+        alert('Failed to start interview.');
+      }
+    };
+    initInterview();
+  }, []);
+
+  // Speak the current question
   const speakQuestion = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
-    utterance.rate = 1;
     utterance.pitch = 1.2;
+    utterance.rate = 1;
 
-    const voices = window.speechSynthesis.getVoices();
-    const femaleVoice = voices.find(
-      (v) =>
-        v.name.toLowerCase().includes('female') ||
-        v.name.toLowerCase().includes('samantha') ||
-        v.name.toLowerCase().includes('zira') ||
-        v.name.toLowerCase().includes('google us english')
+    const voices = speechSynthesis.getVoices();
+    const femaleVoice = voices.find(v =>
+      v.name.toLowerCase().includes('female') ||
+      v.name.toLowerCase().includes('samantha') ||
+      v.name.toLowerCase().includes('zira') ||
+      v.name.toLowerCase().includes('google us english')
     );
     if (femaleVoice) utterance.voice = femaleVoice;
 
@@ -48,11 +76,11 @@ const Interview: React.FC = () => {
       startRecording();
     };
 
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
   };
 
-  // Trigger TTS on question change
+  // Start speaking the current question when updated
   useEffect(() => {
     if (currentQuestionIndex < questions.length) {
       if (speechSynthesis.getVoices().length === 0) {
@@ -61,12 +89,12 @@ const Interview: React.FC = () => {
       } else {
         speakQuestion(questions[currentQuestionIndex]);
       }
-    } else {
-      navigate('/report');
+    } else if (questions.length > 0) {
+      completeInterview();
     }
-  }, [currentQuestionIndex]);
+  }, [currentQuestionIndex, questions]);
 
-  // Timer countdown
+  // Countdown timer
   useEffect(() => {
     if (isSpeaking || !isRecording) return;
 
@@ -75,63 +103,56 @@ const Interview: React.FC = () => {
       return;
     }
 
-    const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
-
+    const interval = setInterval(() => setTimer(prev => prev - 1), 1000);
     return () => clearInterval(interval);
   }, [timer, isSpeaking, isRecording]);
 
-  // Start mic and transcription
+  // Start recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
+      transcriptRef.current = ''; // RESET before recording
 
-      // Speech-to-text setup
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
-        recognition.interimResults = false;
         recognition.continuous = true;
+        recognition.interimResults = false;
 
         recognition.onresult = (event: any) => {
-          const transcript = Array.from(event.results)
+          const text = Array.from(event.results)
             .map((result: any) => result[0].transcript)
             .join(' ');
-          setTranscript(transcript);
+          transcriptRef.current = text;
         };
 
-        recognition.onerror = (e: any) => {
-          console.error('Speech Recognition error:', e.error);
-        };
-
+        recognition.onerror = (e: any) => console.error('STT error:', e.error);
         recognitionRef.current = recognition;
         recognition.start();
       }
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
+        if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const audioURL = URL.createObjectURL(blob);
+        const base64Audio = await blobToBase64(blob);
 
-        // Save both audio and transcript
-        dispatch(setAnswer({
+        const payload: AnswerPayload = {
           index: currentQuestionIndex,
-          audio: audioURL,
-          transcript
-        }));
+          question: questions[currentQuestionIndex],
+          audioBase64: base64Audio,
+          transcript: transcriptRef.current // Use latest transcript from ref
+        };
 
+        await axios.post('/api/interview/answer', payload);
         chunksRef.current = [];
-        setTranscript('');
+        transcriptRef.current = '';
       };
 
       mediaRecorder.start();
@@ -141,35 +162,53 @@ const Interview: React.FC = () => {
     }
   };
 
+  // Stop and move to next
   const stopRecording = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
+    recognitionRef.current?.stop();
+    mediaRecorderRef.current?.stop();
     setIsRecording(false);
-    setCurrentQuestionIndex((prev) => prev + 1);
+    setCurrentQuestionIndex(prev => prev + 1);
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const secs = (seconds % 60).toString().padStart(2, '0');
-    return `${mins}:${secs}`;
+  // Complete interview
+  const completeInterview = async () => {
+    try {
+      await axios.post('/api/interview/complete');
+      navigate('/report');
+    } catch (err) {
+      console.error('Error completing interview:', err);
+    }
   };
+
+  // Convert Blob to base64
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const formatTime = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+  if (!questions.length)
+    return <div className="container p-5 text-center">Loading interview...</div>;
 
   return (
     <div className="container my-5">
       <div className="card shadow p-4">
         <h3 className="mb-4 text-center">Interview In Progress</h3>
 
-        {/* Question */}
         <div className="mb-4">
           <h5>Question {currentQuestionIndex + 1} of {questions.length}</h5>
           <p className="lead">{questions[currentQuestionIndex]}</p>
         </div>
 
-        {/* Timer and Status */}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <span className="badge bg-primary p-2 fs-6">
             Time Left: {formatTime(timer)}
@@ -186,7 +225,6 @@ const Interview: React.FC = () => {
           </div>
         </div>
 
-        {/* Skip button */}
         <div className="text-end">
           <button
             className="btn btn-danger"

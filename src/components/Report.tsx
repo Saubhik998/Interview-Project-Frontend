@@ -1,26 +1,48 @@
-/**
- * Report.tsx
- * ------------------------------------------------
- * Displays a final summary after the interview:
- * - Job Description (optional)
- * - Questions with audio + transcribed text
- * - Candidate fit score (mocked)
- * - Strengths, improvements, follow-up suggestions
- * ------------------------------------------------
- */
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
-import React from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../redux/store';
+interface Answer {
+  question: string;       // ✅ Add question field for matching
+  transcript?: string;
+  audio?: string;
+}
+
+interface ReportData {
+  jd: string;
+  score: number;
+  questions: string[];
+  answers: Answer[];
+  strengths: string[];
+  improvements: string[];
+  followUps: string[];
+}
 
 const Report: React.FC = () => {
-  const { jd, questions, answers } = useSelector((state: RootState) => state.interview);
+  const [report, setReport] = useState<ReportData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mocked scoring and feedback
-  const score = Math.floor(Math.random() * 41) + 60; // 60–100
-  const strengths = ['Clear communication', 'Relevant experience', 'Positive tone'];
-  const improvements = ['More structured answers', 'Add specific examples', 'Speak slightly slower'];
-  const followUps = ['Ask about team collaboration', 'Clarify hands-on skills with tools'];
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        const res = await axios.get<ReportData>('/api/interview/report');
+        setReport(res.data);
+      } catch (err) {
+        console.error('Error fetching report:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReport();
+  }, []);
+
+  if (loading) {
+    return <div className="container p-5 text-center">Loading report...</div>;
+  }
+
+  if (!report) {
+    return <div className="container p-5 text-center text-danger">Failed to load report.</div>;
+  }
 
   return (
     <div className="container my-5">
@@ -30,27 +52,33 @@ const Report: React.FC = () => {
         {/* Candidate Fit Score */}
         <div className="text-center mb-4">
           <h4>Candidate Fit Score</h4>
-          <h1 className={`fw-bold ${score >= 75 ? 'text-success' : 'text-warning'}`}>{score} / 100</h1>
+          <h1 className={`fw-bold ${report.score >= 75 ? 'text-success' : 'text-warning'}`}>
+            {report.score} / 100
+          </h1>
         </div>
 
         {/* Job Description */}
         <div className="mb-4">
           <h5 className="text-muted">Job Description</h5>
-          <p className="text-secondary">{jd || 'No JD available'}</p>
+          <p className="text-secondary">{report.jd || 'No JD available'}</p>
         </div>
 
         {/* Questions + Audio + Transcript */}
         <div className="mb-4">
           <h5 className="text-muted mb-3">Interview Questions & Answers</h5>
-          {questions.map((question, index) => {
-            const answer = answers[index];
+          {report.questions.map((question, index) => {
+            const answer = report.answers.find(a => a.question === question); // ✅ Match by question text
             return (
               <div key={index} className="mb-4">
                 <strong>Q{index + 1}:</strong> {question}
                 <div className="mt-2">
                   {answer ? (
                     <>
-                      <audio data-testid="audio-player" controls src={answer.audio} className="mb-2" />
+                      {answer.audio ? (
+                        <audio controls src={answer.audio} className="mb-2" />
+                      ) : (
+                        <div className="text-muted">No audio available.</div>
+                      )}
                       <p className="text-secondary">
                         <strong>Transcript:</strong>{' '}
                         {answer.transcript ? (
@@ -73,10 +101,8 @@ const Report: React.FC = () => {
         <div className="mb-3">
           <h5 className="text-muted">Strengths</h5>
           <ul className="list-group">
-            {strengths.map((item, idx) => (
-              <li key={idx} className="list-group-item list-group-item-success">
-                {item}
-              </li>
+            {report.strengths?.map((item, idx) => (
+              <li key={idx} className="list-group-item list-group-item-success">{item}</li>
             ))}
           </ul>
         </div>
@@ -85,10 +111,8 @@ const Report: React.FC = () => {
         <div className="mb-3">
           <h5 className="text-muted">Scope for Improvement</h5>
           <ul className="list-group">
-            {improvements.map((item, idx) => (
-              <li key={idx} className="list-group-item list-group-item-warning">
-                {item}
-              </li>
+            {report.improvements?.map((item, idx) => (
+              <li key={idx} className="list-group-item list-group-item-warning">{item}</li>
             ))}
           </ul>
         </div>
@@ -97,10 +121,8 @@ const Report: React.FC = () => {
         <div className="mb-3">
           <h5 className="text-muted">Suggested Follow-Ups</h5>
           <ul className="list-group">
-            {followUps.map((item, idx) => (
-              <li key={idx} className="list-group-item list-group-item-info">
-                {item}
-              </li>
+            {report.followUps?.map((item, idx) => (
+              <li key={idx} className="list-group-item list-group-item-info">{item}</li>
             ))}
           </ul>
         </div>

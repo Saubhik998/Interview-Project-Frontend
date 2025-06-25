@@ -2,54 +2,66 @@
  * JDInput.tsx
  * ----------------------------
  * This component allows the recruiter or user to input or paste a plain-text Job Description (JD).
- * After entering the JD, clicking "Start Interview" will store the JD in Redux state
- * and navigate to the Interview screen.
+ * After entering the JD, clicking "Start Interview" will:
+ * - Send JD to backend API (/api/interview/init)
+ * - Store the JD in Redux
+ * - Navigate to Interview screen
  * ----------------------------
  * Technologies used:
  * - React + TypeScript
- * - Bootstrap 5 for layout/styling
- * - React Router for navigation
+ * - Axios for HTTP requests
  * - Redux for state management
+ * - React Router for navigation
+ * - Bootstrap 5 for layout/styling
  */
 
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { setJD } from '../redux/interviewSlice'; // Action to save JD
-import { useNavigate } from 'react-router-dom';    // Navigation hook
+import { setJD } from '../redux/interviewSlice';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const JDInput: React.FC = () => {
-  // Local state to store the JD text input
   const [jdText, setJdText] = useState('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const dispatch = useDispatch(); // Redux dispatch function
-  const navigate = useNavigate(); // To navigate to /interview after JD is submitted
-
-  // Handler when user clicks "Start Interview"
-  const handleStart = () => {
+  const handleStart = async () => {
     if (jdText.trim().length < 10) {
       alert('Please enter a more complete Job Description.');
       return;
     }
 
-    // Save JD to Redux
-    dispatch(setJD(jdText));
+    try {
+      // ✅ Send the JD to backend API
+      const response = await axios.post('https://localhost:7080/api/interview/init', jdText, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    // Navigate to Interview screen
-    navigate('/interview');
+      console.log('Backend initialized interview:', response.data);
+
+      // ✅ Save JD to Redux
+      dispatch(setJD(jdText));
+
+      // ✅ Navigate to Interview screen
+      navigate('/interview');
+    } catch (error) {
+      console.error('Failed to initialize interview:', error);
+      alert('Error: Could not connect to server.');
+    }
   };
 
   return (
     <div className="container d-flex justify-content-center align-items-center vh-100">
-      {/* Centered Bootstrap card for the input */}
       <div className="card shadow p-4" style={{ maxWidth: '600px', width: '100%' }}>
         <h3 className="mb-3 text-center">AI Screening Interview</h3>
 
-        {/* JD input label */}
         <label htmlFor="jdInput" className="form-label">
           Paste the Job Description
         </label>
 
-        {/* Multiline textarea for entering the JD */}
         <textarea
           id="jdInput"
           className="form-control mb-3"
@@ -59,11 +71,7 @@ const JDInput: React.FC = () => {
           onChange={(e) => setJdText(e.target.value)}
         />
 
-        {/* Start button triggers JD submission */}
-        <button
-          className="btn btn-primary w-100"
-          onClick={handleStart}
-        >
+        <button className="btn btn-primary w-100" onClick={handleStart}>
           Start Interview
         </button>
       </div>
