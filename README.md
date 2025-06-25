@@ -1,19 +1,19 @@
-#  Audio-Based Interviewer (Frontend)
+# 🎤 Audio-Based Interviewer (Frontend)
 
 This is the **frontend-only** implementation of an audio-based interviewer web application. The app simulates a job interview by asking questions using Text-to-Speech, records audio responses, transcribes them using Speech-to-Text, and generates a report with both audio and transcripted answers.
 
 ---
 
-##  Features
+## 🚀 Features
 
--  Job Description (JD) input screen
--  Interview screen with:
+- ✅ Job Description (JD) input screen
+- ✅ Interview screen with:
   - Text-to-Speech (TTS) for questions
   - Automatic microphone recording
   - Live countdown timer
   - Speaking & recording animations
   - Speech-to-Text (STT) transcription
--  Final Report view with:
+- ✅ Final Report view with:
   - JD
   - Questions
   - Audio answers
@@ -21,7 +21,7 @@ This is the **frontend-only** implementation of an audio-based interviewer web a
 
 ---
 
-##  Tech Stack
+## 🧠 Tech Stack
 
 - **React** (w/ TypeScript)
 - **Redux Toolkit** for state management
@@ -34,7 +34,7 @@ This is the **frontend-only** implementation of an audio-based interviewer web a
 
 ---
 
-##  Running Tests
+## 🧪 Running Tests
 
 ```bash
 npm install
@@ -49,7 +49,7 @@ npm test -- --coverage
 
 ---
 
-##  Docker Support
+## 🐳 Docker Support
 
 To build the frontend Docker image:
 
@@ -67,7 +67,7 @@ docker run -p 3000:3000 audio-interviewer-frontend
 
 ---
 
-##  CI - GitHub Actions
+## ⚙️ CI - GitHub Actions
 
 A GitHub Actions workflow (`.github/workflows/frontend-ci.yml`) runs on every push or pull request to `main`:
 
@@ -77,7 +77,7 @@ A GitHub Actions workflow (`.github/workflows/frontend-ci.yml`) runs on every pu
 
 ---
 
-## Folder Structure
+## 📁 Folder Structure
 
 ```
 src/
@@ -90,7 +90,7 @@ src/
 
 ---
 
-##  Notes
+## 📌 Notes
 
 * This is a **frontend-only implementation**.
 * All data is currently managed in the Redux store.
