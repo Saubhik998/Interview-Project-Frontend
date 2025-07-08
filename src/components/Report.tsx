@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import html2pdf from 'html2pdf.js';
 
 interface Answer {
-  question: string;       // ✅ Add question field for matching
+  question: string;
   transcript?: string;
   audio?: string;
 }
@@ -36,6 +37,21 @@ const Report: React.FC = () => {
     fetchReport();
   }, []);
 
+  const downloadPDF = () => {
+    const element = document.getElementById('report-content');
+    if (!element) return;
+
+    const options = {
+      margin:       0.5,
+      filename:     'interview_report.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(options).from(element).save();
+  };
+
   if (loading) {
     return <div className="container p-5 text-center">Loading report...</div>;
   }
@@ -46,7 +62,7 @@ const Report: React.FC = () => {
 
   return (
     <div className="container my-5">
-      <div className="card shadow p-4">
+      <div id="report-content" className="card shadow p-4">
         <h2 className="text-center mb-4">Interview Summary Report</h2>
 
         {/* Candidate Fit Score */}
@@ -67,7 +83,7 @@ const Report: React.FC = () => {
         <div className="mb-4">
           <h5 className="text-muted mb-3">Interview Questions & Answers</h5>
           {report.questions.map((question, index) => {
-            const answer = report.answers.find(a => a.question === question); // ✅ Match by question text
+            const answer = report.answers.find(a => a.question === question);
             return (
               <div key={index} className="mb-4">
                 <strong>Q{index + 1}:</strong> {question}
@@ -131,6 +147,13 @@ const Report: React.FC = () => {
         <div className="text-center mt-4">
           <p className="text-muted">Interview complete. Thank you!</p>
         </div>
+      </div>
+
+      {/* PDF Download Button */}
+      <div className="text-center mt-4">
+        <button className="btn btn-outline-primary" onClick={downloadPDF}>
+          Download Report as PDF
+        </button>
       </div>
     </div>
   );
