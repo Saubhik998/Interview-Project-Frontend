@@ -8,11 +8,15 @@ import axios from 'axios';
 interface InitResponse {
   message: string;
   jd: string;
-  questions: string[];
+  firstQuestion: string;
+}
+
+interface QuestionResponse {
+  index: number;
+  question: string;
 }
 
 interface AnswerPayload {
-  index: number;
   question: string;
   audioBase64: string;
   transcript: string;
@@ -23,7 +27,7 @@ const Interview: React.FC = () => {
   const { jd } = useSelector((state: RootState) => state.interview);
 
   const [questions, setQuestions] = useState<string[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [timer, setTimer] = useState(600);
@@ -31,7 +35,7 @@ const Interview: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
-  const transcriptRef = useRef<string>(''); // NEW
+  const transcriptRef = useRef<string>('');
 
   // Initialize interview
   useEffect(() => {
@@ -40,7 +44,9 @@ const Interview: React.FC = () => {
         const res = await axios.post<InitResponse>('/api/interview/init', jd, {
           headers: { 'Content-Type': 'application/json' }
         });
-        setQuestions(res.data.questions);
+        const first = res.data.firstQuestion;
+        setCurrentQuestion(first);
+        setQuestions([first]);
       } catch (err) {
         console.error('Error initializing interview:', err);
         alert('Failed to start interview.');
@@ -80,21 +86,16 @@ const Interview: React.FC = () => {
     speechSynthesis.speak(utterance);
   };
 
-  // Start speaking the current question when updated
   useEffect(() => {
-    if (currentQuestionIndex < questions.length) {
+    if (currentQuestion) {
       if (speechSynthesis.getVoices().length === 0) {
-        speechSynthesis.onvoiceschanged = () =>
-          speakQuestion(questions[currentQuestionIndex]);
+        speechSynthesis.onvoiceschanged = () => speakQuestion(currentQuestion);
       } else {
-        speakQuestion(questions[currentQuestionIndex]);
+        speakQuestion(currentQuestion);
       }
-    } else if (questions.length > 0) {
-      completeInterview();
     }
-  }, [currentQuestionIndex, questions]);
+  }, [currentQuestion]);
 
-  // Countdown timer
   useEffect(() => {
     if (isSpeaking || !isRecording) return;
 
@@ -107,14 +108,13 @@ const Interview: React.FC = () => {
     return () => clearInterval(interval);
   }, [timer, isSpeaking, isRecording]);
 
-  // Start recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
-      transcriptRef.current = ''; // RESET before recording
+      transcriptRef.current = '';
 
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       if (SpeechRecognition) {
@@ -144,15 +144,23 @@ const Interview: React.FC = () => {
         const base64Audio = await blobToBase64(blob);
 
         const payload: AnswerPayload = {
-          index: currentQuestionIndex,
-          question: questions[currentQuestionIndex],
+          question: currentQuestion,
           audioBase64: base64Audio,
-          transcript: transcriptRef.current // Use latest transcript from ref
+          transcript: transcriptRef.current
         };
 
         await axios.post('/api/interview/answer', payload);
         chunksRef.current = [];
         transcriptRef.current = '';
+
+        // Fetch next question
+        const res = await axios.get<QuestionResponse>('/api/interview/question');
+        if (res.data?.question) {
+          setCurrentQuestion(res.data.question);
+          setQuestions(prev => [...prev, res.data.question]);
+        } else {
+          completeInterview();
+        }
       };
 
       mediaRecorder.start();
@@ -162,15 +170,12 @@ const Interview: React.FC = () => {
     }
   };
 
-  // Stop and move to next
   const stopRecording = () => {
     recognitionRef.current?.stop();
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
-    setCurrentQuestionIndex(prev => prev + 1);
   };
 
-  // Complete interview
   const completeInterview = async () => {
     try {
       await axios.post('/api/interview/complete');
@@ -180,7 +185,6 @@ const Interview: React.FC = () => {
     }
   };
 
-  // Convert Blob to base64
   const blobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -196,7 +200,7 @@ const Interview: React.FC = () => {
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
-  if (!questions.length)
+  if (!currentQuestion)
     return <div className="container p-5 text-center">Loading interview...</div>;
 
   return (
@@ -205,8 +209,8 @@ const Interview: React.FC = () => {
         <h3 className="mb-4 text-center">Interview In Progress</h3>
 
         <div className="mb-4">
-          <h5>Question {currentQuestionIndex + 1} of {questions.length}</h5>
-          <p className="lead">{questions[currentQuestionIndex]}</p>
+          <h5>Question {questions.length}</h5>
+          <p className="lead">{currentQuestion}</p>
         </div>
 
         <div className="d-flex justify-content-between align-items-center mb-3">
