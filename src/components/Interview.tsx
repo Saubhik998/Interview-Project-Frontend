@@ -5,9 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import styles from '../css/Interview.module.css';
 import axios from 'axios';
 
+
 interface InitResponse {
   message: string;
-  jd: string;
+  jobDescription: string;
   firstQuestion: string;
 }
 
@@ -24,6 +25,7 @@ interface AnswerPayload {
 
 const Interview: React.FC = () => {
   const navigate = useNavigate();
+  const email = useSelector((state: RootState) => state.auth.email);
   const { jd } = useSelector((state: RootState) => state.interview);
 
   const [questions, setQuestions] = useState<string[]>([]);
@@ -41,7 +43,10 @@ const Interview: React.FC = () => {
   useEffect(() => {
     const initInterview = async () => {
       try {
-        const res = await axios.post<InitResponse>('/api/interview/init', jd, {
+        const res = await axios.post<InitResponse>('/api/interview/init', {
+          email,
+          jobDescription: jd,
+        }, {
           headers: { 'Content-Type': 'application/json' }
         });
         const first = res.data.firstQuestion;
