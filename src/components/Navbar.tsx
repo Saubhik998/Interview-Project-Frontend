@@ -5,6 +5,9 @@ import { Link } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   const email = useSelector((state: RootState) => state.auth.email);
+  const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
+  if (!isLoggedIn) return null;
+  
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4">
