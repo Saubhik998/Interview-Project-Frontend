@@ -1,103 +1,72 @@
+// src/tests/Report.test.tsx
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import axios from 'axios';
 import Report from '../components/Report';
-import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import interviewReducer from '../redux/interviewSlice';
 
-// Helper: Create a Redux test store with mocked state
-const mockStore = configureStore({
-  reducer: {
-    interview: interviewReducer,
-  },
-  preloadedState: {
-    interview: {
-      jd: 'Looking for a React developer with strong TypeScript skills.',
-      questions: ['Why do you want this job?'],
-      currentQuestionIndex: 0,
-      answers: [
-        {
-          audio: 'test-audio-url.mp3',
-          transcript: 'I am passionate about frontend engineering.',
-        },
-      ],
+// ✅ Mock axios
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+// ✅ Mock data
+const mockReportData = {
+  jd: 'Full Stack Developer',
+  score: 87,
+  questions: ['What is React?', 'Explain Node.js'],
+  answers: [
+    {
+      question: 'What is React?',
+      transcript: 'React is a JavaScript library for building UIs.',
+      audio: 'http://example.com/audio1.mp3',
     },
-  },
-});
+    {
+      question: 'Explain Node.js',
+      transcript: 'Node.js is a runtime for executing JavaScript on the server.',
+      audio: 'http://example.com/audio2.mp3',
+    },
+  ],
+  strengths: ['Strong communication', 'Deep technical knowledge'],
+  improvements: ['Expand on backend topics'],
+  followUps: ['Ask about database optimization'],
+};
 
 describe('Report Component', () => {
-  test('renders the report with score, JD, question, audio, and transcript', () => {
-    render(
-      <Provider store={mockStore}>
-        <Report />
-      </Provider>
-    );
-
-    // Score
-    expect(screen.getByText(/Candidate Fit Score/i)).toBeInTheDocument();
-
-    // Job Description
-    expect(
-      screen.getByText(/Looking for a React developer with strong TypeScript skills/i)
-    ).toBeInTheDocument();
-
-    // Question
-    expect(screen.getByText(/Q1:/)).toBeInTheDocument();
-
-    // Transcript
-    expect(screen.getByText(/I am passionate about frontend engineering./)).toBeInTheDocument();
-
-    // Audio
-    const audio = screen.getByTestId('audio-player');
-    expect(audio).toBeInTheDocument();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  test('shows fallback text if no transcript is available', () => {
-    const fallbackStore = configureStore({
-      reducer: { interview: interviewReducer },
-      preloadedState: {
-        interview: {
-          jd: 'Sample JD',
-          questions: ['What is your biggest strength?'],
-          currentQuestionIndex: 0,
-          answers: [
-            {
-              audio: 'test-audio-url.mp3',
-              transcript: '',
-            },
-          ],
-        },
-      },
+  it('renders loading state and then displays the report', async () => {
+    const mockResponse = {
+      data: mockReportData,
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { url: '/api/interview/report' },
+    };
+
+    mockedAxios.get.mockResolvedValueOnce(mockResponse);
+
+    render(<Report />);
+
+    // ✅ Show loading initially
+    expect(screen.getByText(/loading report/i)).toBeInTheDocument();
+
+    // ✅ Wait for actual content
+    await waitFor(() => {
+      expect(screen.getByText(/Interview Summary Report/i)).toBeInTheDocument();
+      expect(screen.getByText(/Full Stack Developer/i)).toBeInTheDocument();
+      expect(screen.getByText(/React is a JavaScript library/i)).toBeInTheDocument();
+      expect(screen.getByText(/Strong communication/i)).toBeInTheDocument();
     });
-
-    render(
-      <Provider store={fallbackStore}>
-        <Report />
-      </Provider>
-    );
-
-    expect(screen.getByText(/No transcript available/i)).toBeInTheDocument();
   });
 
-  test('shows warning if no answer recorded', () => {
-    const noAnswerStore = configureStore({
-      reducer: { interview: interviewReducer },
-      preloadedState: {
-        interview: {
-          jd: '',
-          questions: ['Describe a challenge you faced.'],
-          currentQuestionIndex: 0,
-          answers: [],
-        },
-      },
+  it('shows error message if fetching report fails', async () => {
+    mockedAxios.get.mockRejectedValueOnce(new Error('API Error'));
+
+    render(<Report />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/failed to load report/i)).toBeInTheDocument();
     });
-
-    render(
-      <Provider store={noAnswerStore}>
-        <Report />
-      </Provider>
-    );
-
-    expect(screen.getByText(/No answer recorded/i)).toBeInTheDocument();
   });
 });
