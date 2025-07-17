@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import html2pdf from 'html2pdf.js';
+import api from '../api'; // Axios instance for API calls
+import html2pdf from 'html2pdf.js'; // Library to convert HTML to PDF
 
+// Define structure for an individual answer
 interface Answer {
   question: string;
   transcript?: string;
   audio?: string;
 }
 
+// Define the structure of the report data received from the backend
 interface ReportData {
   jd: string;
   score: number;
@@ -19,53 +21,58 @@ interface ReportData {
 }
 
 const Report: React.FC = () => {
-  const [report, setReport] = useState<ReportData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [report, setReport] = useState<ReportData | null>(null); // Store fetched report data
+  const [loading, setLoading] = useState(true); // Track loading state
 
+  // Fetch report from backend on component mount
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const res = await axios.get<ReportData>('/api/interview/report');
-        setReport(res.data);
+        const res = await api.get<ReportData>('/interview/report');
+        setReport(res.data); // Store report data in state
       } catch (err) {
         console.error('Error fetching report:', err);
       } finally {
-        setLoading(false);
+        setLoading(false); // Stop loading spinner regardless of success/failure
       }
     };
 
     fetchReport();
   }, []);
 
+  // Trigger PDF download using html2pdf.js
   const downloadPDF = () => {
     const element = document.getElementById('report-content');
     if (!element) return;
 
     const options = {
-      margin:       0.5,
-      filename:     'interview_report.pdf',
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      margin: 0.5,
+      filename: 'interview_report.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    html2pdf().set(options).from(element).save();
+    html2pdf().set(options).from(element).save(); // Convert and save as PDF
   };
 
+  // Show loading message
   if (loading) {
     return <div className="container p-5 text-center">Loading report...</div>;
   }
 
+  // Show error message if report fails to load
   if (!report) {
     return <div className="container p-5 text-center text-danger">Failed to load report.</div>;
   }
 
   return (
     <div className="container my-5">
+      {/* Main Report Content for Viewing and PDF Generation */}
       <div id="report-content" className="card shadow p-4">
         <h2 className="text-center mb-4">Interview Summary Report</h2>
 
-        {/* Candidate Fit Score */}
+        {/* Display the overall candidate score */}
         <div className="text-center mb-4">
           <h4>Candidate Fit Score</h4>
           <h1 className={`fw-bold ${report.score >= 75 ? 'text-success' : 'text-warning'}`}>
@@ -73,16 +80,17 @@ const Report: React.FC = () => {
           </h1>
         </div>
 
-        {/* Job Description */}
+        {/* Job Description Section */}
         <div className="mb-4">
           <h5 className="text-muted">Job Description</h5>
           <p className="text-secondary">{report.jd || 'No JD available'}</p>
         </div>
 
-        {/* Questions + Audio + Transcript */}
+        {/* Questions and Answers (Audio + Transcript) Section */}
         <div className="mb-4">
           <h5 className="text-muted mb-3">Interview Questions & Answers</h5>
           {report.questions.map((question, index) => {
+            // Find the corresponding answer for each question
             const answer = report.answers.find(a => a.question === question);
             return (
               <div key={index} className="mb-4">
@@ -90,11 +98,14 @@ const Report: React.FC = () => {
                 <div className="mt-2">
                   {answer ? (
                     <>
+                      {/* Play recorded audio if available */}
                       {answer.audio ? (
                         <audio controls src={answer.audio} className="mb-2" />
                       ) : (
                         <div className="text-muted">No audio available.</div>
                       )}
+
+                      {/* Display transcript if available */}
                       <p className="text-secondary">
                         <strong>Transcript:</strong>{' '}
                         {answer.transcript ? (
@@ -113,7 +124,7 @@ const Report: React.FC = () => {
           })}
         </div>
 
-        {/* Strengths */}
+        {/* Strengths Section */}
         <div className="mb-3">
           <h5 className="text-muted">Strengths</h5>
           <ul className="list-group">
@@ -123,7 +134,7 @@ const Report: React.FC = () => {
           </ul>
         </div>
 
-        {/* Scope for Improvement */}
+        {/* Scope for Improvement Section */}
         <div className="mb-3">
           <h5 className="text-muted">Scope for Improvement</h5>
           <ul className="list-group">
@@ -133,7 +144,7 @@ const Report: React.FC = () => {
           </ul>
         </div>
 
-        {/* Suggested Follow-Ups */}
+        {/* Suggested Follow-Up Questions Section */}
         <div className="mb-3">
           <h5 className="text-muted">Suggested Follow-Ups</h5>
           <ul className="list-group">
@@ -143,13 +154,13 @@ const Report: React.FC = () => {
           </ul>
         </div>
 
-        {/* Final Message */}
+        {/* Closing Message */}
         <div className="text-center mt-4">
           <p className="text-muted">Interview complete. Thank you!</p>
         </div>
       </div>
 
-      {/* PDF Download Button */}
+      {/* Button to Download the Full Report as PDF */}
       <div className="text-center mt-4">
         <button className="btn btn-outline-primary" onClick={downloadPDF}>
           Download Report as PDF

@@ -1,5 +1,3 @@
-// src/tests/Interview.test.tsx
-
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import Interview from '../components/Interview';
@@ -8,21 +6,21 @@ import { Provider } from 'react-redux';
 import interviewReducer from '../redux/interviewSlice';
 import authReducer from '../redux/authSlice';
 import { RootState } from '../redux/store';
-import axios from 'axios';
 import { MemoryRouter } from 'react-router-dom';
+import axiosInstance from '../api'; 
 
-// ✅ Mock navigation
+//  Mock navigation
 const mockedNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedNavigate,
 }));
 
-// ✅ Mock axios
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+//  Mock custom axios instance
+jest.mock('../api');
+const mockedAxios = axiosInstance as jest.Mocked<typeof axiosInstance>;
 
-// ✅ Mock SpeechSynthesisUtterance
+//  Mock SpeechSynthesisUtterance
 Object.assign(global, {
   SpeechSynthesisUtterance: class {
     text: string;
@@ -38,7 +36,7 @@ Object.assign(global, {
   },
 });
 
-// ✅ Mock speechSynthesis
+//  Mock speechSynthesis
 Object.defineProperty(window, 'speechSynthesis', {
   writable: true,
   value: {
@@ -54,7 +52,7 @@ Object.defineProperty(window, 'speechSynthesis', {
   },
 });
 
-// ✅ Capture and mock MediaRecorder
+//  Capture and mock MediaRecorder
 const mediaRecorderInstances: any[] = [];
 Object.defineProperty(window, 'MediaRecorder', {
   writable: true,
@@ -72,14 +70,14 @@ Object.defineProperty(window, 'MediaRecorder', {
   },
 });
 
-// ✅ Mock navigator.mediaDevices.getUserMedia
+//  Mock getUserMedia
 Object.defineProperty(navigator, 'mediaDevices', {
   value: {
     getUserMedia: jest.fn().mockResolvedValue({}),
   },
 });
 
-// ✅ Custom AxiosResponse type
+//  AxiosResponse type
 type AxiosResponse<T = any> = {
   data: T;
   status: number;
@@ -88,7 +86,7 @@ type AxiosResponse<T = any> = {
   config: { url: string };
 };
 
-// ✅ Test helper to render Interview with preloaded store state
+//  Helper to render component with Redux
 function renderWithStore(preState: Partial<RootState>) {
   const store = configureStore({
     reducer: {
@@ -107,7 +105,7 @@ function renderWithStore(preState: Partial<RootState>) {
   );
 }
 
-// ✅ Base Redux state
+//  Base state
 const baseState: Partial<RootState> = {
   auth: {
     email: 'test@example.com',
@@ -121,7 +119,7 @@ const baseState: Partial<RootState> = {
   },
 };
 
-// ✅ TESTS
+//  TESTS
 describe('Interview Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -192,12 +190,10 @@ describe('Interview Component', () => {
     });
 
     act(() => {
-      // Simulate TTS speech end
       const utterance = (window.speechSynthesis.speak as jest.Mock).mock.calls[0][0];
       utterance.onend();
     });
 
-    // ✅ Wait for MediaRecorder instance to be created
     let recorder: any;
     await waitFor(() => {
       recorder = mediaRecorderInstances[0];
