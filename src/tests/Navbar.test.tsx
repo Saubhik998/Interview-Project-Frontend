@@ -8,14 +8,14 @@ import interviewReducer from '../redux/interviewSlice';
 import Navbaar from '../components/Navbar';
 import { RootState } from '../redux/store';
 
-// ✅ Mock useNavigate
+// Mock useNavigate
 const mockedNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedNavigate,
 }));
 
-// ✅ Helper to render with Redux store
+//  Helper to render with Redux store
 function renderWithStore(preState: Partial<RootState>) {
   const store = configureStore({
     reducer: {
@@ -34,7 +34,7 @@ function renderWithStore(preState: Partial<RootState>) {
   );
 }
 
-// ✅ State fixtures
+//  State fixtures
 const loggedInState: Partial<RootState> = {
   auth: { email: 'test@example.com', isLoggedIn: true },
   interview: {
@@ -55,7 +55,7 @@ const loggedOutState: Partial<RootState> = {
   },
 };
 
-// ✅ TESTS
+//  TESTS
 describe('Navbaar Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();

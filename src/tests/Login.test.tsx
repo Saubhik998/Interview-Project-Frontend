@@ -1,4 +1,4 @@
-// src/tests/Login.test.tsx
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
@@ -6,11 +6,11 @@ import { configureStore, Store } from '@reduxjs/toolkit';
 import { MemoryRouter } from 'react-router-dom';
 import Login from '../auth/Login';
 import authReducer from '../redux/authSlice';
-import interviewReducer from '../redux/interviewSlice'; // ✅ Add this
+import interviewReducer from '../redux/interviewSlice'; 
 import { RootState } from '../redux/store';
 import '@testing-library/jest-dom';
 
-// ✅ Mock useNavigate
+//  Mock useNavigate
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -24,7 +24,7 @@ describe('Login Component', () => {
     store = configureStore({
       reducer: {
         auth: authReducer,
-        interview: interviewReducer, // ✅ Include this to match RootState
+        interview: interviewReducer, 
       },
     });
     jest.clearAllMocks();

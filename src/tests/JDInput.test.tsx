@@ -1,5 +1,3 @@
-// src/tests/JDInput.test.tsx
-
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import JDInput from '../components/JDInput';
@@ -8,28 +6,28 @@ import { Provider } from 'react-redux';
 import interviewReducer from '../redux/interviewSlice';
 import authReducer from '../redux/authSlice';
 import { RootState } from '../redux/store';
-import axios from 'axios';
+import axios from '../api'; 
 import { MemoryRouter } from 'react-router-dom';
 
-// ✅ Mock useNavigate
+//  Mock useNavigate from react-router-dom
 const mockedNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedNavigate,
 }));
 
-// ✅ Mock axios
-jest.mock('axios');
+//  Mock custom Axios instance
+jest.mock('../api');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// ✅ Helper to render with preloaded store
-function renderWithStore(preState: Partial<RootState>) {
+//  Helper: render JDInput with custom Redux store state
+function renderWithStore(preloadedState: Partial<RootState>) {
   const store = configureStore({
     reducer: {
       interview: interviewReducer,
       auth: authReducer,
     },
-    preloadedState: preState as RootState,
+    preloadedState: preloadedState as RootState,
   });
 
   return render(
@@ -41,7 +39,7 @@ function renderWithStore(preState: Partial<RootState>) {
   );
 }
 
-// ✅ Base state with email
+//  Base Redux state for tests
 const baseState: Partial<RootState> = {
   auth: {
     email: 'test@example.com',
@@ -55,18 +53,20 @@ const baseState: Partial<RootState> = {
   },
 };
 
+//  Tests
 describe('JDInput Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders JD input field', () => {
+  it('renders JD input field and start button', () => {
     renderWithStore(baseState);
     expect(screen.getByLabelText(/job description/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /start interview/i })).toBeInTheDocument();
   });
 
   it('submits JD and navigates to /interview', async () => {
+    // Mock successful API response
     mockedAxios.post.mockResolvedValueOnce({
       data: {
         message: 'Started',
@@ -76,24 +76,28 @@ describe('JDInput Component', () => {
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: { url: '/api/interview/init' },
+      config: {url: '/api/interview/init'},
     });
 
     renderWithStore(baseState);
 
-    const textarea = screen.getByLabelText(/job description/i);
-    fireEvent.change(textarea, { target: { value: 'Frontend developer' } });
+    // Fill in JD
+    fireEvent.change(screen.getByLabelText(/job description/i), {
+      target: { value: 'Frontend developer' },
+    });
 
-    const button = screen.getByRole('button', { name: /start interview/i });
-    fireEvent.click(button);
+    // Submit
+    fireEvent.click(screen.getByRole('button', { name: /start interview/i }));
 
+    // Assert Axios POST call
     await waitFor(() => {
-      expect(mockedAxios.post).toHaveBeenCalledWith(expect.stringContaining('/api/interview/init'), {
+      expect(mockedAxios.post).toHaveBeenCalledWith('/interview/init', {
         jobDescription: 'Frontend developer',
         email: 'test@example.com',
       });
     });
 
+    // Assert navigation
     await waitFor(() => {
       expect(mockedNavigate).toHaveBeenCalledWith('/interview');
     });

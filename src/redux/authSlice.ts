@@ -4,7 +4,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 // Interface defining auth state structure
-interface AuthState {
+export  interface AuthState {
   isLoggedIn: boolean;
   email: string;
 }

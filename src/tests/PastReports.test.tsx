@@ -12,21 +12,21 @@ import { MemoryRouter } from 'react-router-dom';
 import PastReports from '../components/PastReports';
 import authReducer from '../redux/authSlice';
 import interviewReducer from '../redux/interviewSlice';
-import axios from 'axios';
+import axios from '../api'; 
 import { RootState } from '../redux/store';
 
-// ✅ Mock useNavigate
+//  Mock useNavigate
 const mockedNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedNavigate,
 }));
 
-// ✅ Mock axios
-jest.mock('axios');
+//  Mock axios
+jest.mock('../api'); 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// ✅ Helper to render with Redux
+//  Helper to render with Redux
 function renderWithStore(preState: Partial<RootState>) {
   const store = configureStore({
     reducer: {
@@ -45,7 +45,7 @@ function renderWithStore(preState: Partial<RootState>) {
   );
 }
 
-// ✅ Base mock state
+//  Base mock state
 const baseState: Partial<RootState> = {
   auth: {
     email: 'test@example.com',
@@ -65,7 +65,7 @@ describe('PastReports Component', () => {
   });
 
   it('shows loading and then renders reports', async () => {
-    // ✅ Create manual promise delay to simulate real loading
+    // Create manual promise delay to simulate real loading
     let resolveAxios: (value: any) => void;
     const axiosPromise = new Promise((resolve) => {
       resolveAxios = resolve;
@@ -77,10 +77,10 @@ describe('PastReports Component', () => {
       renderWithStore(baseState);
     });
 
-    // ✅ Now check loading text
+    // Check loading text
     expect(screen.getByText(/loading past reports/i)).toBeInTheDocument();
 
-    // ✅ Now resolve axios manually
+    // Resolve axios manually
     resolveAxios!({
       data: [
         {
@@ -100,7 +100,7 @@ describe('PastReports Component', () => {
       config: { url: '/api/interview/reports' },
     });
 
-    // ✅ Now wait for final render
+    // Wait for render
     await waitFor(() => {
       expect(screen.getAllByText(/Job Description:/i)).toHaveLength(2);
       expect(screen.getAllByText(/Candidate Fit Score:/i)).toHaveLength(2);

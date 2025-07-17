@@ -1,12 +1,12 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../api';
 import ReportDetails from '../components/ReportDetails';
 
-// ✅ Mock axios
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+//  Mock the custom axios instance
+jest.mock('../api');
+const mockedAxios = axiosInstance as jest.Mocked<typeof axiosInstance>;
 
 const mockReport = {
   jobDescription: 'Software Engineer',
@@ -39,7 +39,7 @@ describe('ReportDetails Component', () => {
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: { url: '/api/interview/report/123' },
+      config: { url: '/api/interview/report/123' }, // required for type compatibility
     });
 
     render(

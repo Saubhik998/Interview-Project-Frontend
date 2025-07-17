@@ -3,9 +3,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
 import styles from '../css/Interview.module.css';
-import axios from 'axios';
+import api from '../api';
 
-
+// --- Interfaces for API responses ---
 interface InitResponse {
   message: string;
   jobDescription: string;
@@ -28,27 +28,30 @@ const Interview: React.FC = () => {
   const email = useSelector((state: RootState) => state.auth.email);
   const { jd } = useSelector((state: RootState) => state.interview);
 
+  // --- Component state ---
   const [questions, setQuestions] = useState<string[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [timer, setTimer] = useState(600);
+  const [timer, setTimer] = useState(600); // 10 minutes max per question
 
+  // --- References ---
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<string>('');
 
-  // Initialize interview
+  // --- Initialize interview session ---
   useEffect(() => {
     const initInterview = async () => {
       try {
-        const res = await axios.post<InitResponse>('/api/interview/init', {
+        const res = await api.post<InitResponse>('/interview/init', {
           email,
           jobDescription: jd,
         }, {
           headers: { 'Content-Type': 'application/json' }
         });
+
         const first = res.data.firstQuestion;
         setCurrentQuestion(first);
         setQuestions([first]);
@@ -57,16 +60,18 @@ const Interview: React.FC = () => {
         alert('Failed to start interview.');
       }
     };
+
     initInterview();
   }, []);
 
-  // Speak the current question
+  // --- Speak question aloud using Web Speech API ---
   const speakQuestion = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.pitch = 1.2;
     utterance.rate = 1;
 
+    // Try to choose a natural-sounding female voice
     const voices = speechSynthesis.getVoices();
     const femaleVoice = voices.find(v =>
       v.name.toLowerCase().includes('female') ||
@@ -76,6 +81,7 @@ const Interview: React.FC = () => {
     );
     if (femaleVoice) utterance.voice = femaleVoice;
 
+    // Handle speech events
     utterance.onstart = () => {
       setIsSpeaking(true);
       setIsRecording(false);
@@ -83,14 +89,15 @@ const Interview: React.FC = () => {
 
     utterance.onend = () => {
       setIsSpeaking(false);
-      setTimer(600);
-      startRecording();
+      setTimer(600); // Reset timer
+      startRecording(); // Start capturing answer
     };
 
     speechSynthesis.cancel();
     speechSynthesis.speak(utterance);
   };
 
+  // --- When question changes, speak it ---
   useEffect(() => {
     if (currentQuestion) {
       if (speechSynthesis.getVoices().length === 0) {
@@ -101,11 +108,11 @@ const Interview: React.FC = () => {
     }
   }, [currentQuestion]);
 
+  // --- Countdown logic while recording ---
   useEffect(() => {
     if (isSpeaking || !isRecording) return;
-
     if (timer <= 0) {
-      stopRecording();
+      stopRecording(); // Auto-stop when time runs out
       return;
     }
 
@@ -113,6 +120,7 @@ const Interview: React.FC = () => {
     return () => clearInterval(interval);
   }, [timer, isSpeaking, isRecording]);
 
+  // --- Start audio and speech-to-text recording ---
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -121,6 +129,7 @@ const Interview: React.FC = () => {
       chunksRef.current = [];
       transcriptRef.current = '';
 
+      // Start Speech Recognition (STT)
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
@@ -140,10 +149,12 @@ const Interview: React.FC = () => {
         recognition.start();
       }
 
+      // Collect audio data
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
+      // After recording stops, send answer and get next question
       mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         const base64Audio = await blobToBase64(blob);
@@ -154,42 +165,47 @@ const Interview: React.FC = () => {
           transcript: transcriptRef.current
         };
 
-        await axios.post('/api/interview/answer', payload);
+        await api.post('/interview/answer', payload);
+
+        // Reset buffer
         chunksRef.current = [];
         transcriptRef.current = '';
 
         // Fetch next question
-        const res = await axios.get<QuestionResponse>('/api/interview/question');
+        const res = await api.get<QuestionResponse>('/interview/question');
         if (res.data?.question) {
           setCurrentQuestion(res.data.question);
           setQuestions(prev => [...prev, res.data.question]);
         } else {
-          completeInterview();
+          completeInterview(); // No more questions
         }
       };
 
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
-      console.error('Microphone access denied:', err);
+      console.error('Microphone access denied or error:', err);
     }
   };
 
+  // --- Stop recording audio and transcription ---
   const stopRecording = () => {
     recognitionRef.current?.stop();
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
   };
 
+  // --- Finalize interview and redirect to report ---
   const completeInterview = async () => {
     try {
-      await axios.post('/api/interview/complete');
+      await api.post('/interview/complete');
       navigate('/report');
     } catch (err) {
       console.error('Error completing interview:', err);
     }
   };
 
+  // --- Utility: Convert Blob to Base64 ---
   const blobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -202,12 +218,15 @@ const Interview: React.FC = () => {
     });
   };
 
+  // --- Format seconds into mm:ss ---
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
+  // --- Loading state ---
   if (!currentQuestion)
     return <div className="container p-5 text-center">Loading interview...</div>;
 
+  // --- Main UI ---
   return (
     <div className="container my-5">
       <div className="card shadow p-4">

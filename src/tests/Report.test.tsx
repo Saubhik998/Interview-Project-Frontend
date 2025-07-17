@@ -1,14 +1,15 @@
-// src/tests/Report.test.tsx
+
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import axios from 'axios';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Report from '../components/Report';
+import axios from '../api'; // 
 
-// ✅ Mock axios
-jest.mock('axios');
+//  Mock axios
+jest.mock('../api');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// ✅ Mock data
+//  Mock data
 const mockReportData = {
   jd: 'Full Stack Developer',
   score: 87,
@@ -41,17 +42,23 @@ describe('Report Component', () => {
       status: 200,
       statusText: 'OK',
       headers: {},
-      config: { url: '/api/interview/report' },
+      config: {url: '/api/interview/report'},
     };
 
     mockedAxios.get.mockResolvedValueOnce(mockResponse);
 
-    render(<Report />);
+    render(
+      <MemoryRouter initialEntries={['/report/123']}>
+        <Routes>
+          <Route path="/report/:id" element={<Report />} />
+        </Routes>
+      </MemoryRouter>
+    );
 
-    // ✅ Show loading initially
+    //  Show loading initially
     expect(screen.getByText(/loading report/i)).toBeInTheDocument();
 
-    // ✅ Wait for actual content
+    //  Wait for actual content
     await waitFor(() => {
       expect(screen.getByText(/Interview Summary Report/i)).toBeInTheDocument();
       expect(screen.getByText(/Full Stack Developer/i)).toBeInTheDocument();
@@ -63,7 +70,13 @@ describe('Report Component', () => {
   it('shows error message if fetching report fails', async () => {
     mockedAxios.get.mockRejectedValueOnce(new Error('API Error'));
 
-    render(<Report />);
+    render(
+      <MemoryRouter initialEntries={['/report/123']}>
+        <Routes>
+          <Route path="/report/:id" element={<Report />} />
+        </Routes>
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(screen.getByText(/failed to load report/i)).toBeInTheDocument();
