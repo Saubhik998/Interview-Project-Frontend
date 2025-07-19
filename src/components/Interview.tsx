@@ -5,10 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import styles from '../css/Interview.module.css';
 import api from '../api';
 
-// --- Interfaces for API responses ---
 interface InitResponse {
   message: string;
-  jobDescription: string;
+  sessionId: string;
   firstQuestion: string;
 }
 
@@ -18,6 +17,7 @@ interface QuestionResponse {
 }
 
 interface AnswerPayload {
+  sessionId: string;
   question: string;
   audioBase64: string;
   transcript: string;
@@ -25,243 +25,210 @@ interface AnswerPayload {
 
 const Interview: React.FC = () => {
   const navigate = useNavigate();
-  const email = useSelector((state: RootState) => state.auth.email);
-  const { jd } = useSelector((state: RootState) => state.interview);
+  const email = useSelector((s: RootState) => s.auth.email);
+  const { jd } = useSelector((s: RootState) => s.interview);
 
-  // --- Component state ---
+  const [sessionId, setSessionId] = useState<string>('');
   const [questions, setQuestions] = useState<string[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [timer, setTimer] = useState(600); // 10 minutes max per question
+  const [interviewEnded, setInterviewEnded] = useState(false);
+  const [timer, setTimer] = useState(600);
 
-  // --- References ---
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<string>('');
 
-  // --- Initialize interview session ---
   useEffect(() => {
-    const initInterview = async () => {
+    (async () => {
       try {
-        const res = await api.post<InitResponse>('/interview/init', {
-          email,
-          jobDescription: jd,
-        }, {
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        const first = res.data.firstQuestion;
-        setCurrentQuestion(first);
-        setQuestions([first]);
+        const res = await api.post<InitResponse>('/interview/init', { email, jobDescription: jd });
+        const { sessionId, firstQuestion } = res.data;
+        setSessionId(sessionId);
+        localStorage.setItem('sessionId', sessionId);
+        setCurrentQuestion(firstQuestion);
+        setQuestions([firstQuestion]);
       } catch (err) {
         console.error('Error initializing interview:', err);
         alert('Failed to start interview.');
       }
-    };
+    })();
+  }, [email, jd]);
 
-    initInterview();
-  }, []);
-
-  // --- Speak question aloud using Web Speech API ---
   const speakQuestion = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.pitch = 1.2;
     utterance.rate = 1;
-
-    // Try to choose a natural-sounding female voice
     const voices = speechSynthesis.getVoices();
-    const femaleVoice = voices.find(v =>
-      v.name.toLowerCase().includes('female') ||
-      v.name.toLowerCase().includes('samantha') ||
-      v.name.toLowerCase().includes('zira') ||
-      v.name.toLowerCase().includes('google us english')
-    );
-    if (femaleVoice) utterance.voice = femaleVoice;
-
-    // Handle speech events
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setIsRecording(false);
-    };
-
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setTimer(600); // Reset timer
-      startRecording(); // Start capturing answer
-    };
-
+    const female = voices.find(v => v.name.toLowerCase().includes('female'));
+    if (female) utterance.voice = female;
+    utterance.onstart = () => { setIsSpeaking(true); setIsRecording(false); };
+    utterance.onend = () => { setIsSpeaking(false); setTimer(600); startRecording(); };
     speechSynthesis.cancel();
     speechSynthesis.speak(utterance);
   };
 
-  // --- When question changes, speak it ---
   useEffect(() => {
-    if (currentQuestion) {
-      if (speechSynthesis.getVoices().length === 0) {
-        speechSynthesis.onvoiceschanged = () => speakQuestion(currentQuestion);
-      } else {
-        speakQuestion(currentQuestion);
-      }
+    if (!currentQuestion) return;
+    if (speechSynthesis.getVoices().length === 0) {
+      speechSynthesis.onvoiceschanged = () => speakQuestion(currentQuestion);
+    } else {
+      speakQuestion(currentQuestion);
     }
   }, [currentQuestion]);
 
-  // --- Countdown logic while recording ---
   useEffect(() => {
     if (isSpeaking || !isRecording) return;
-    if (timer <= 0) {
-      stopRecording(); // Auto-stop when time runs out
-      return;
-    }
-
-    const interval = setInterval(() => setTimer(prev => prev - 1), 1000);
-    return () => clearInterval(interval);
+    if (timer <= 0) { stopRecording(); return; }
+    const id = setInterval(() => setTimer(t => t - 1), 1000);
+    return () => clearInterval(id);
   }, [timer, isSpeaking, isRecording]);
 
-  // --- Start audio and speech-to-text recording ---
+  const blobToBase64 = (b: Blob) =>
+    new Promise<string>((res, rej) => {
+      const r = new FileReader();
+      r.onloadend = () => res((r.result as string).split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(b);
+    });
+
   const startRecording = async () => {
+    if (!sessionId || interviewEnded || !currentQuestion.trim()) {
+      alert('Session not ready or interview done.');
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
       chunksRef.current = [];
       transcriptRef.current = '';
 
-      // Start Speech Recognition (STT)
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.continuous = true;
-        recognition.interimResults = false;
-
-        recognition.onresult = (event: any) => {
-          const text = Array.from(event.results)
-            .map((result: any) => result[0].transcript)
-            .join(' ');
-          transcriptRef.current = text;
+      const SR = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      if (SR) {
+        const recog = new SR();
+        recog.lang = 'en-US';
+        recog.continuous = true;
+        recog.interimResults = false;
+        recog.onresult = (e: any) => {
+          transcriptRef.current = Array.from(e.results).map((r: any) => r[0].transcript).join(' ');
         };
-
-        recognition.onerror = (e: any) => console.error('STT error:', e.error);
-        recognitionRef.current = recognition;
-        recognition.start();
+        recog.onerror = () => console.error('STT error');
+        recognitionRef.current = recog;
+        recog.start();
       }
 
-      // Collect audio data
-      mediaRecorder.ondataavailable = (e) => {
+      recorder.ondataavailable = e => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      // After recording stops, send answer and get next question
-      mediaRecorder.onstop = async () => {
+      recorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const base64Audio = await blobToBase64(blob);
+        const base64 = await blobToBase64(blob);
+        if (base64.length < 5000) {
+          alert('Too short, please speak more.');
+          return;
+        }
 
         const payload: AnswerPayload = {
+          sessionId,
           question: currentQuestion,
-          audioBase64: base64Audio,
+          audioBase64: base64,
           transcript: transcriptRef.current
         };
 
-        await api.post('/interview/answer', payload);
-
-        // Reset buffer
-        chunksRef.current = [];
-        transcriptRef.current = '';
-
-        // Fetch next question
-        const res = await api.get<QuestionResponse>('/interview/question');
-        if (res.data?.question) {
-          setCurrentQuestion(res.data.question);
-          setQuestions(prev => [...prev, res.data.question]);
-        } else {
-          completeInterview(); // No more questions
+        try {
+          await api.post('/interview/answer', payload);
+          const { data } = await api.get<QuestionResponse>('/interview/question', { params: { sessionId } });
+          if (data.question) {
+            setCurrentQuestion(data.question);
+            setQuestions(q => [...q, data.question]);
+          } else {
+            completeInterview();
+          }
+        } catch (e: any) {
+          if (e.response?.data?.error === 'No more questions.') completeInterview();
+          else {
+            console.error(e);
+            alert('Error fetching next.');
+          }
         }
+
+        chunksRef.current = [];
       };
 
-      mediaRecorder.start();
+      recorder.start();
       setIsRecording(true);
-    } catch (err) {
-      console.error('Microphone access denied or error:', err);
+    } catch (e) {
+      console.error('Recording error:', e);
     }
   };
 
-  // --- Stop recording audio and transcription ---
   const stopRecording = () => {
     recognitionRef.current?.stop();
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
   };
 
-  // --- Finalize interview and redirect to report ---
   const completeInterview = async () => {
-    try {
-      await api.post('/interview/complete');
-      navigate('/report');
-    } catch (err) {
-      console.error('Error completing interview:', err);
-    }
+    try { await api.post('/interview/complete', null, { params: { sessionId } }); } catch { }
+    setInterviewEnded(true);
+    setCurrentQuestion('');
+    alert('Interview finished!');
+    navigate('/report');
   };
 
-  // --- Utility: Convert Blob to Base64 ---
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
+  if (!currentQuestion && !interviewEnded) return <div>Loading…</div>;
 
-  // --- Format seconds into mm:ss ---
-  const formatTime = (s: number) =>
-    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-
-  // --- Loading state ---
-  if (!currentQuestion)
-    return <div className="container p-5 text-center">Loading interview...</div>;
-
-  // --- Main UI ---
   return (
-    <div className="container my-5">
-      <div className="card shadow p-4">
+    <div
+      className="container-fluid d-flex flex-column justify-content-center align-items-center min-vh-100"
+      style={{
+        backgroundImage: 'url("/images/bg.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        color: 'white',
+        padding: '2rem'
+      }}
+    >
+      <div
+        className="p-4 shadow"
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          borderRadius: '8px',
+          width: '100%',
+          maxWidth: '800px'
+        }}
+      >
         <h3 className="mb-4 text-center">Interview In Progress</h3>
 
-        <div className="mb-4">
-          <h5>Question {questions.length}</h5>
-          <p className="lead">{currentQuestion}</p>
-        </div>
+        {!interviewEnded && (
+          <>
+            <div className="mb-4">
+              <h5>Q{questions.length}:</h5>
+              <p className="lead text-light">{currentQuestion}</p>
+            </div>
 
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <span className="badge bg-primary p-2 fs-6">
-            Time Left: {formatTime(timer)}
-          </span>
-
-          <div className="d-flex align-items-center gap-3">
-            {isSpeaking && <div className={styles.speakingDots}><span></span><span></span><span></span></div>}
-            {isRecording && !isSpeaking && <div className={styles.recordingMic}></div>}
-            <span className={`badge p-2 fs-6 ${
-              isSpeaking ? 'bg-warning' : isRecording ? 'bg-success' : 'bg-secondary'
-            }`}>
-              {isSpeaking ? 'Speaking...' : isRecording ? 'Recording...' : 'Waiting'}
-            </span>
-          </div>
-        </div>
-
-        <div className="text-end">
-          <button
-            className="btn btn-danger"
-            onClick={stopRecording}
-            disabled={!isRecording || isSpeaking}
-          >
-            Stop & Next
-          </button>
-        </div>
+            <div className="d-flex justify-content-between align-items-center">
+              <span className="badge bg-primary p-2 fs-6">
+                Time left: {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
+              </span>
+              <div className="d-flex align-items-center gap-3">
+                {isSpeaking && <div className={styles.speakingDots}><span></span><span></span><span></span></div>}
+                {isRecording && !isSpeaking && <div className={styles.recordingMic}></div>}
+                <span className={`badge p-2 fs-6 ${isSpeaking ? 'bg-warning' : isRecording ? 'bg-success' : 'bg-secondary'}`}>
+                  {isSpeaking ? 'Speaking...' : isRecording ? 'Recording...' : 'Waiting'}
+                </span>
+                <button className="btn btn-danger ms-3" onClick={stopRecording} disabled={!isRecording || isSpeaking}>
+                  Stop & Next
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
