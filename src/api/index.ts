@@ -1,10 +1,7 @@
 import axios from 'axios';
 
-const API = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+const api = axios.create({
+  baseURL: 'https://localhost:7080/api', // Make sure 7080 matches your .NET backend port
 });
 
-export default API;
+export default api;

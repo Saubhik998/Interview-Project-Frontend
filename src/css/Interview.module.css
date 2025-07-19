@@ -1,56 +1,113 @@
-/* Speaking dots (TTS) */
+/* Interview.module.css */
+
+/* Font import (Optional, looks great) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+.container {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 24px;
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease-in-out;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+h3 {
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+  color: #222;
+  margin-bottom: 1.5rem;
+}
+
+p {
+  font-size: 1.1rem;
+  color: #333;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(135deg, #ff7eb3, #ff758c);
+  color: white;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* Speaking dots */
 .speakingDots {
   display: flex;
-  gap: 6px;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1rem;
 }
 
 .speakingDots span {
   width: 10px;
   height: 10px;
-  background-color: orange;
+  background: #ff8c00;
   border-radius: 50%;
-  animation: bounce 1s infinite ease-in-out;
+  animation: bounce 1s infinite alternate;
 }
 
 .speakingDots span:nth-child(2) {
   animation-delay: 0.2s;
 }
-
 .speakingDots span:nth-child(3) {
   animation-delay: 0.4s;
 }
 
 @keyframes bounce {
-  0%, 80%, 100% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1.4);
-    opacity: 1;
-  }
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-8px); }
 }
 
-/* Recording mic pulse */
+/* Recording Mic Pulse */
 .recordingMic {
   width: 16px;
   height: 16px;
-  background-color: red;
+  background: #00e676;
   border-radius: 50%;
-  animation: pulse 1.2s infinite;
+  animation: pulse 1.6s infinite ease-in-out;
+  position: relative;
 }
 
 @keyframes pulse {
   0% {
-    transform: scale(1);
-    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.5);
   }
   70% {
-    transform: scale(1.5);
-    opacity: 0.4;
+    box-shadow: 0 0 0 12px rgba(0, 230, 118, 0);
   }
   100% {
-    transform: scale(1);
-    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
   }
+}
+
+/* Button Styling */
+button.btn-danger {
+  font-size: 1rem;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff5858, #f857a6);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(248, 87, 166, 0.3);
+  background: linear-gradient(135deg, #f857a6, #ff5858);
 }

@@ -2,14 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api';
 
-// Define the structure of each answer in the report
 interface Answer {
   question: string;
   transcript: string;
   audio: string;
 }
 
-// Define the structure of the full report
 interface Report {
   jobDescription: string;
   candidateFitScore: number;
@@ -20,76 +18,87 @@ interface Report {
 }
 
 const ReportDetails: React.FC = () => {
-  // Extract the report ID from the URL params
   const { id } = useParams();
-
-  // State to store the fetched report data
   const [report, setReport] = useState<Report | null>(null);
-
-  // Loading state to handle asynchronous fetch status
   const [loading, setLoading] = useState(true);
 
-  // Fetch the report when the component mounts or the ID changes
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        // API call to fetch report by ID
         const res = await api.get<Report>(`/interview/report/${id}`);
-        setReport(res.data); // Save the report data to state
+        setReport(res.data);
       } catch (err) {
-        console.error('Failed to load report:', err); // Log any errors
+        console.error('Failed to load report:', err);
       } finally {
-        setLoading(false); // Always stop loading indicator
+        setLoading(false);
       }
     };
 
     fetchReport();
   }, [id]);
 
-  // Show loading message while fetching data
-  if (loading) return <div className="container p-5 text-center">Loading report...</div>;
+  if (loading)
+    return <div className="container p-5 text-center text-light">Loading report...</div>;
 
-  // Show error message if no report is found
-  if (!report) return <div className="container p-5 text-danger">Report not found.</div>;
+  if (!report)
+    return <div className="container p-5 text-center text-danger">Report not found.</div>;
 
-  // Render the full report
   return (
-    <div className="container my-5">
-      <h2 className="text-center mb-4">Full Interview Report</h2>
+    <div
+      className="container d-flex justify-content-center align-items-center min-vh-100"
+      style={{
+        backgroundImage: 'url("/images/bg.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <div
+        className="shadow p-4 w-100 text-white"
+        style={{
+          backgroundColor: '#000000', // solid black background
+          borderRadius: '8px',
+          maxWidth: '850px',
+        }}
+      >
+        <h2 className="text-center mb-4">Full Interview Report</h2>
 
-      {/* Candidate's evaluation score */}
-      <h4>Candidate Fit Score: {report.candidateFitScore}/100</h4>
+        <h4>Candidate Fit Score: {report.candidateFitScore} / 100</h4>
+        <p><strong>Job Description:</strong> {report.jobDescription}</p>
 
-      {/* Job description used for interview */}
-      <p><strong>Job Description:</strong> {report.jobDescription}</p>
+        <hr />
+        <h5 className="mt-4">Q&A</h5>
+        {report.answers.map((answer, i) => (
+          <div key={i} className="mb-4">
+            <p><strong>Q{i + 1}:</strong> {answer.question}</p>
+            {answer.audio && (
+              <audio controls src={answer.audio} className="d-block my-2" />
+            )}
+            <p><strong>Transcript:</strong> {answer.transcript || "N/A"}</p>
+          </div>
+        ))}
 
-      <hr />
-      {/* List of all questions and answers */}
-      <h5>Q&A</h5>
-      {report.answers.map((answer, i) => (
-        <div key={i} className="mb-3">
-          <strong>Q{i + 1}:</strong> {answer.question}
-          
-          {/* Play recorded audio if available */}
-          {answer.audio && <audio controls src={answer.audio} className="d-block my-2" />}
+        <hr />
+        <h5>Strengths</h5>
+        <ul>
+          {report.strengths.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ul>
 
-          {/* Transcript of the user's answer */}
-          <p><strong>Transcript:</strong> {answer.transcript || "N/A"}</p>
-        </div>
-      ))}
+        <h5>Areas of Improvement</h5>
+        <ul>
+          {report.improvementAreas.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ul>
 
-      <hr />
-      {/* List of strengths detected by AI */}
-      <h5>Strengths</h5>
-      <ul>{report.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
-
-      {/* Areas where improvement is needed */}
-      <h5>Improvements</h5>
-      <ul>{report.improvementAreas.map((s, i) => <li key={i}>{s}</li>)}</ul>
-
-      {/* Follow-up questions recommended for further evaluation */}
-      <h5>Suggested Follow-Ups</h5>
-      <ul>{report.suggestedFollowUp.map((s, i) => <li key={i}>{s}</li>)}</ul>
+        <h5>Suggested Follow-Ups</h5>
+        <ul>
+          {report.suggestedFollowUp.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };

@@ -1,59 +1,65 @@
-// Login.tsx
-// ---------------------------
-// This component renders a simple login form for user authentication.
-// It collects the user's email and dispatches a Redux login action.
-// Upon successful submission, it navigates to the JDInput (home) page.
-
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../redux/authSlice';
 
+// Login component: renders a simple email-based login form
 const Login: React.FC = () => {
-  // Local state to manage the input email value
+  // Local state for the email input field
   const [email, setEmail] = useState('');
-
-  // Redux dispatcher to send login action
+  // Redux dispatch to update global auth state
   const dispatch = useDispatch();
-
-  // React Router hook to navigate after login
+  // Navigation hook to redirect after successful login
   const navigate = useNavigate();
 
-  /**
-   * Handles form submission
-   * - Prevents default form behavior
-   * - Dispatches the email to Redux using `login` action
-   * - Redirects the user to the home page (JDInput)
-   */
+  // Handler for form submission
   const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    dispatch(login(email)); // Save email in Redux global state
-    navigate('/');          // Redirect to job description input page
+    e.preventDefault(); // Prevent default form submission behavior
+    dispatch(login(email)); // Dispatch login action with entered email
+    navigate('/'); // Redirect user to the home/dashboard route
   };
 
   return (
-    <div className="container d-flex flex-column justify-content-center align-items-center min-vh-100 bg-light">
-      {/* Login card */}
-      <div className="card shadow p-4" style={{ maxWidth: '400px', width: '100%' }}>
+    <div
+      className="container d-flex flex-column justify-content-center align-items-center min-vh-100"
+      style={{
+        backgroundImage: 'url("/images/bg.png")', // Full-screen background image
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      {/* Login card with translucent overlay for readability */}
+      <div
+        className="shadow p-4"
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.6)', // Translucent black background
+          color: 'white', // White text for contrast
+          borderRadius: '8px',
+          maxWidth: '400px',
+          width: '100%',
+        }}
+      >
         <h2 className="text-center mb-4">Login</h2>
 
-        {/* Login form */}
+        {/* Email login form */}
         <form onSubmit={handleLogin}>
-          {/* Email input field */}
           <div className="mb-3">
-            <label htmlFor="email" className="form-label">Email address</label>
+            <label htmlFor="email" className="form-label">
+              Email address
+            </label>
+            {/* Controlled input for email field */}
             <input
               type="email"
               className="form-control"
               id="email"
               placeholder="Enter your email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              onChange={(e) => setEmail(e.target.value)} // Update state on input change
+              required // HTML5 validation for required field
             />
           </div>
 
-          {/* Submit button */}
+          {/* Submit button triggers handleLogin */}
           <button type="submit" className="btn btn-primary w-100">
             Login
           </button>
