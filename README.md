@@ -1,100 +1,150 @@
-# 🎤 Audio-Based Interviewer (Frontend)
+# AI-AudioInterviewer Frontend
 
-This is the **frontend-only** implementation of an audio-based interviewer web application. The app simulates a job interview by asking questions using Text-to-Speech, records audio responses, transcribes them using Speech-to-Text, and generates a report with both audio and transcripted answers.
+## What is this?
 
----
+AI-AudioInterviewer Frontend is a React and TypeScript single-page application that serves as the user interface for the AudioInterviewer platform. It allows users to:
 
-## 🚀 Features
+* Log in and authenticate
+* Input job descriptions
+* Conduct and record mock interviews
+* View and download past interview reports
 
-- ✅ Job Description (JD) input screen
-- ✅ Interview screen with:
-  - Text-to-Speech (TTS) for questions
-  - Automatic microphone recording
-  - Live countdown timer
-  - Speaking & recording animations
-  - Speech-to-Text (STT) transcription
-- ✅ Final Report view with:
-  - JD
-  - Questions
-  - Audio answers
-  - Transcripts
+The frontend communicates with a backend API (ASP.NET Core) and other services over HTTP.
 
 ---
 
-## 🧠 Tech Stack
+## Features
 
-- **React** (w/ TypeScript)
-- **Redux Toolkit** for state management
-- **React Router** for navigation
-- **Web APIs**:
-  - `speechSynthesis` for TTS
-  - `webkitSpeechRecognition` for STT
-- **CSS Modules** for styling
-- **Jest** + **React Testing Library** for unit & integration tests
+* **React & TypeScript**: Strong typing and modular components
+* **Redux Toolkit**: Centralized state management for interview data
+* **React Router**: Client-side routing for multiple views
+* **Axios**: API client with a configurable base URL
+* **Jest & React Testing Library**: Unit and integration tests covering key flows
+* **Docker & Docker Compose**: Containerized for easy deployment
 
 ---
 
-## 🧪 Running Tests
+## Directory Structure
+
+```
+AudioInterviewer-Frontend/
+├── Dockerfile                # Docker image definition
+├── docker-compose.yml        # Compose setup for multi-container dev
+├── public/                   # Static files
+│   ├── index.html            # Main HTML
+│   ├── favicon.ico
+│   ├── logo192.png
+│   └── robots.txt
+├── src/                      # Application source code
+│   ├── api/                  # Axios instance (baseURL configuration)
+│   │   └── index.ts
+│   ├── assets/               # Images and static assets (e.g., bg.png)
+│   ├── auth/                 # Authentication components and routes
+│   │   ├── Login.tsx
+│   │   └── ProtectedRoute.tsx
+│   ├── components/           # UI components
+│   │   ├── Navbar.tsx
+│   │   ├── JDInput.tsx
+│   │   ├── Interview.tsx
+│   │   ├── Report.tsx
+│   │   ├── PastReports.tsx
+│   │   └── ReportDetails.tsx
+│   ├── redux/                # Redux Toolkit slices and store
+│   │   ├── interviewSlice.ts
+│   │   └── store.ts
+│   ├── types/                # Type declarations
+│   │   └── html2pdf.d.ts
+│   ├── tests/                # Unit and integration tests
+│   │   └── *.test.tsx
+│   ├── App.tsx               # Root component and routes
+│   ├── index.tsx             # App entry point
+│   ├── setupTests.ts         # Jest setup
+│   └── reportWebVitals.ts    # Performance metrics
+└── package.json              # NPM scripts and dependencies
+```
+
+---
+
+## Prerequisites
+* **React** 
+* **npm** 
+* **Docker**
+
+### Installation
+
+1. Clone this repository:
+
+   ```bash
+   git clone <https://github.com/Saubhik998/Interview-Project-Frontend>
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+### Running Locally
+
+To start the development server:
 
 ```bash
-npm install
+npm start
+```
+
+The app will be available at [http://localhost:3000](http://localhost:3000).
+
+### Running Tests
+
+Execute the test suite with:
+
+```bash
 npm test
-````
 
-To view code coverage:
+```
+
+This runs Jest in watch mode and reports on code coverage.
+
+---
+
+## Docker
+
+### Build and Run with Docker
+
+1. Build the Docker image:
+
+   ```bash
+   docker build -t audio-interviewer-frontend .
+   ```
+
+2. Run a container:
+
+   ```bash
+   docker run -p 3000:80 audio-interviewer-frontend
+   ```
+
+This serves the production build on port 3000.
+
+### Using Docker Compose
+
+A `docker-compose.yml` is provided for an integrated dev setup:
 
 ```bash
-npm test -- --coverage
+docker-compose up --build
 ```
+
+This command spins up the frontend container (and any linked services defined).
 
 ---
 
-## 🐳 Docker Support
+## How It Works
 
-To build the frontend Docker image:
-
-```bash
-docker build -t audio-interviewer-frontend .
-```
-
-To run the container:
-
-```bash
-docker run -p 3000:3000 audio-interviewer-frontend
-```
-
-> The app will be available at [http://localhost:3000](http://localhost:3000)
+1. **Authentication**: Users log in via `auth/Login.tsx`. Protected routes use `ProtectedRoute.tsx`.
+2. **Job Description Input**: `JDInput.tsx` captures a description, triggering an interview session.
+3. **Interview Flow**: `Interview.tsx` handles recording audio, sending it to the backend, and updating state via Redux.
+4. **Report Generation**: After completion, `Report.tsx` renders results; past reports live in `PastReports.tsx`.
+5. **State Management**: Redux slice in `redux/interviewSlice.ts` tracks questions, answers, and scores.
 
 ---
 
-## ⚙️ CI - GitHub Actions
-
-A GitHub Actions workflow (`.github/workflows/frontend-ci.yml`) runs on every push or pull request to `main`:
-
-* Lints and builds the app
-* Installs dependencies
-* Runs all tests
-
----
-
-## 📁 Folder Structure
-
-```
-src/
-├── components/           # JDInput, Interview, Report components
-├── redux/                # interviewSlice + store setup
-├── tests/                # Unit/integration tests
-├── App.tsx               # Routing logic
-├── index.tsx             # Entry point
-```
-
----
-
-## 📌 Notes
-
-* This is a **frontend-only implementation**.
-* All data is currently managed in the Redux store.
-
-
----
 
