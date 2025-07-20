@@ -8,3 +8,9 @@ services:
     ports:
       - "3000:80"
     container_name: audio-interviewer-frontend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true

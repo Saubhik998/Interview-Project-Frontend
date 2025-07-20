@@ -1,0 +1,36 @@
+.report-question {
+  color: #c0392b;           /* deep red for questions */
+  font-weight: 700;
+  background-color: rgba(192, 57, 43, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.report-answer {
+  color: #27ae60;           /* rich green for answers */
+  background-color: rgba(39, 174, 96, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.section-box {
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.section-strengths {
+  border-color: #f1c40f;    /* golden yellow */
+  background-color: rgba(241, 196, 15, 0.05);
+}
+
+.section-improvements {
+  border-color: #2980b9;    /* calm blue */
+  background-color: rgba(41, 128, 185, 0.05);
+}
+
+.section-followup {
+  border-color: #16a085;    /* teal-green */
+  background-color: rgba(22, 160, 133, 0.05);
+}
