@@ -1,29 +1,33 @@
-name: Frontend CI
+name: Code Integration  
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]           # Run workflow on every push to main branch
   pull_request:
-    branches: [ main ]
+    branches: [ main ]           # Run workflow on PRs targeting main branch
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest       # Use the latest Ubuntu runner
 
     steps:
-      - name: Checkout code
+      - name: Checkout code      # Step 1: Get source code from repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js     # Step 2: Set up Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20       # Specify Node.js version
 
-      - name: Install dependencies
+      - name: Install dependencies   # Step 3: Install NPM dependencies
         run: npm install
 
-      - name: Run tests
+      - name: Run tests              # Step 4: Run the test suite
         run: npm test -- --watchAll=false
 
-      - name: Run build (warnings allowed)
-        run: CI='' npm run build
+      - name: Run build (warnings allowed)          # Step 5: Build the app, allow warnings (skip CI fail-on-warning)
+        env:
+          CI: ''                                  # Unset CI to avoid build failing on warnings (for Create React App, etc.)
+        run: npm run build
+
+  
