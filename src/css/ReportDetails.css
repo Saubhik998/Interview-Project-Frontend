@@ -34,3 +34,12 @@
   border-color: #16a085;    /* teal-green */
   background-color: rgba(22, 160, 133, 0.05);
 }
+
+
+.center-fit-score {
+  text-align: center;
+  font-weight: bold;
+  margin: 16px 0 4px 0;
+  font-size: 1.2rem;
+}
+

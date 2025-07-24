@@ -15,18 +15,24 @@ import interviewReducer from '../redux/interviewSlice';
 import axios from '../api'; 
 import { RootState } from '../redux/store';
 
-//  Mock useNavigate
+// -----------
+// Mock useNavigate from react-router-dom so navigation is testable
+// -----------
 const mockedNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedNavigate,
 }));
 
-//  Mock axios
+// -----------
+// Mock axios, so requests are intercepted by our test
+// -----------
 jest.mock('../api'); 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-//  Helper to render with Redux
+// -----------
+// Helper to render with a Redux provider and router context
+// -----------
 function renderWithStore(preState: Partial<RootState>) {
   const store = configureStore({
     reducer: {
@@ -45,7 +51,9 @@ function renderWithStore(preState: Partial<RootState>) {
   );
 }
 
-//  Base mock state
+// -----------
+// A typical logged-in user state
+// -----------
 const baseState: Partial<RootState> = {
   auth: {
     email: 'test@example.com',
@@ -59,28 +67,33 @@ const baseState: Partial<RootState> = {
   },
 };
 
+// =============================
+// TEST SUITE
+// =============================
 describe('PastReports Component', () => {
   beforeEach(() => {
+    // Clear any mocks so each test is isolated
     jest.clearAllMocks();
   });
 
   it('shows loading and then renders reports', async () => {
-    // Create manual promise delay to simulate real loading
+    // Use a manual promise for fine-grained async control
     let resolveAxios: (value: any) => void;
     const axiosPromise = new Promise((resolve) => {
       resolveAxios = resolve;
     });
 
+    // When component asks for past reports, resolve later
     mockedAxios.get.mockImplementationOnce(() => axiosPromise as any);
 
     await act(async () => {
       renderWithStore(baseState);
     });
 
-    // Check loading text
+    // Loading indicator must show while promise not resolved
     expect(screen.getByText(/loading past reports/i)).toBeInTheDocument();
 
-    // Resolve axios manually
+    // After manual resolve, two reports should appear
     resolveAxios!({
       data: [
         {
@@ -100,7 +113,7 @@ describe('PastReports Component', () => {
       config: { url: '/api/interview/reports' },
     });
 
-    // Wait for render
+    // Wait for UI to update for both reports
     await waitFor(() => {
       expect(screen.getAllByText(/Job Description:/i)).toHaveLength(2);
       expect(screen.getAllByText(/Candidate Fit Score:/i)).toHaveLength(2);
@@ -109,6 +122,7 @@ describe('PastReports Component', () => {
   });
 
   it('navigates to report detail when a report is clicked', async () => {
+    // Only one report this time for clickability test
     mockedAxios.get.mockResolvedValueOnce({
       data: [
         {
@@ -123,19 +137,23 @@ describe('PastReports Component', () => {
       config: { url: '/api/interview/reports' },
     });
 
+    // Render component and ensure report loaded
     await act(async () => {
       renderWithStore(baseState);
     });
 
+    // Wait for report to render
     await waitFor(() => {
       expect(screen.getByText(/QA Engineer/i)).toBeInTheDocument();
     });
 
+    // Click the button to view full report
     fireEvent.click(screen.getByText(/View Full Report/i));
     expect(mockedNavigate).toHaveBeenCalledWith('/report/abc123');
   });
 
   it('shows message if no reports found', async () => {
+    // Simulate empty list returned from backend
     mockedAxios.get.mockResolvedValueOnce({
       data: [],
       status: 200,
@@ -148,6 +166,7 @@ describe('PastReports Component', () => {
       renderWithStore(baseState);
     });
 
+    // Wait for the "no reports found" message using test email
     expect(
       await screen.findByText(/no reports found for test@example.com/i)
     ).toBeInTheDocument();

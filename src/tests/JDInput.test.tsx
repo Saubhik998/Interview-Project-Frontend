@@ -6,21 +6,27 @@ import { Provider } from 'react-redux';
 import interviewReducer from '../redux/interviewSlice';
 import authReducer from '../redux/authSlice';
 import { RootState } from '../redux/store';
-import axios from '../api'; 
+import axios from '../api';
 import { MemoryRouter } from 'react-router-dom';
 
-//  Mock useNavigate from react-router-dom
+// -- Mocks --
+
+// Mock useNavigate so we can test redirects
 const mockedNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedNavigate,
 }));
 
-//  Mock custom Axios instance
+// Mock Axios so no real network calls are made
 jest.mock('../api');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-//  Helper: render JDInput with custom Redux store state
+/*
+  renderWithStore:
+  Helper which sets up a Redux Provider using a given initial state,
+  wraps component in react-router MemoryRouter context for navigation.
+*/
 function renderWithStore(preloadedState: Partial<RootState>) {
   const store = configureStore({
     reducer: {
@@ -39,7 +45,7 @@ function renderWithStore(preloadedState: Partial<RootState>) {
   );
 }
 
-//  Base Redux state for tests
+// A basic state for a logged-in user, ready to test JDInput
 const baseState: Partial<RootState> = {
   auth: {
     email: 'test@example.com',
@@ -53,20 +59,22 @@ const baseState: Partial<RootState> = {
   },
 };
 
-//  Tests
+// Main Test Suite for JDInput
 describe('JDInput Component', () => {
   beforeEach(() => {
+    // Clear navigation, API, and any other mocks before each test
     jest.clearAllMocks();
   });
 
   it('renders JD input field and start button', () => {
     renderWithStore(baseState);
+    // Checks that input and button are rendered - base UI smoke test
     expect(screen.getByLabelText(/job description/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /start interview/i })).toBeInTheDocument();
   });
 
   it('submits JD and navigates to /interview', async () => {
-    // Mock successful API response
+    // Arrange: set up the next Axios POST call to resolve with fake backend data
     mockedAxios.post.mockResolvedValueOnce({
       data: {
         message: 'Started',
@@ -81,15 +89,15 @@ describe('JDInput Component', () => {
 
     renderWithStore(baseState);
 
-    // Fill in JD
+    // Act: Simulate user typing into JD input
     fireEvent.change(screen.getByLabelText(/job description/i), {
       target: { value: 'Frontend developer' },
     });
 
-    // Submit
+    // Click the 'Start Interview' button
     fireEvent.click(screen.getByRole('button', { name: /start interview/i }));
 
-    // Assert Axios POST call
+    // Assert: Axios call should be triggered with email and JD
     await waitFor(() => {
       expect(mockedAxios.post).toHaveBeenCalledWith('/interview/init', {
         jobDescription: 'Frontend developer',
@@ -97,7 +105,7 @@ describe('JDInput Component', () => {
       });
     });
 
-    // Assert navigation
+    // Assert: react-router navigate should go to /interview
     await waitFor(() => {
       expect(mockedNavigate).toHaveBeenCalledWith('/interview');
     });

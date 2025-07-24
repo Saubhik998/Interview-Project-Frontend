@@ -8,14 +8,18 @@ import interviewReducer from '../redux/interviewSlice';
 import Navbaar from '../components/Navbar';
 import { RootState } from '../redux/store';
 
-// Mock useNavigate
+// ------------------
+// Mock useNavigate from react-router-dom for navigation testing
+// ------------------
 const mockedNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedNavigate,
 }));
 
-//  Helper to render with Redux store
+// ------------------
+// Helper for rendering component with Redux/Router context
+// ------------------
 function renderWithStore(preState: Partial<RootState>) {
   const store = configureStore({
     reducer: {
@@ -34,7 +38,9 @@ function renderWithStore(preState: Partial<RootState>) {
   );
 }
 
-//  State fixtures
+// ------------------
+// Sample Redux states for logged in/out scenarios
+// ------------------
 const loggedInState: Partial<RootState> = {
   auth: { email: 'test@example.com', isLoggedIn: true },
   interview: {
@@ -55,23 +61,30 @@ const loggedOutState: Partial<RootState> = {
   },
 };
 
-//  TESTS
+// ------------------
+// TESTS
+// ------------------
 describe('Navbaar Component', () => {
   beforeEach(() => {
+    // Always clear previous mock calls for isolation
     jest.clearAllMocks();
   });
 
   it('shows email and View Past Reports button when logged in', () => {
     renderWithStore(loggedInState);
 
+    // Check email visible
     expect(screen.getByText(/test@example.com/i)).toBeInTheDocument();
+    // View Past Reports button (likely an <a> or <Link>)
     expect(screen.getByRole('link', { name: /view past reports/i })).toBeInTheDocument();
   });
 
   it('does not show email or reports button when not logged in', () => {
     renderWithStore(loggedOutState);
 
+    // "Logged in as" context missing
     expect(screen.queryByText(/logged in as/i)).not.toBeInTheDocument();
+    // No View Past Reports button
     expect(screen.queryByRole('link', { name: /view past reports/i })).not.toBeInTheDocument();
   });
 
@@ -81,8 +94,9 @@ describe('Navbaar Component', () => {
     const link = screen.getByRole('link', { name: /view past reports/i });
     fireEvent.click(link);
 
-    // Optional: If the <a> has an `onClick={() => navigate('/reports')}` instead of href, this would work
-    // For now, just assert the link has correct href
+    // If this <a> or <Link> has href, check it:
     expect(link).toHaveAttribute('href', '/reports');
+    // If Navbaar uses navigate('/reports'), you could also check:
+    // expect(mockedNavigate).toHaveBeenCalledWith('/reports');
   });
 });
