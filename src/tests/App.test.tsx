@@ -2,7 +2,9 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from '../App';
 
-// Mock components used inside App
+// -- Mock all major components used in App for isolation --
+
+// Instead of rendering actual components, these return simple divs for test purposes
 jest.mock('../components/JDInput', () => () => <div>JDInput Component</div>);
 jest.mock('../components/Interview', () => () => <div>Interview Component</div>);
 jest.mock('../components/Report', () => () => <div>Report Component</div>);
@@ -11,23 +13,29 @@ jest.mock('../components/Navbar', () => () => <div>Navbar Component</div>);
 jest.mock('../components/ReportDetails', () => () => <div>ReportDetails Component</div>);
 jest.mock('../auth/Login', () => () => <div>Login Component</div>);
 
-// Mock ProtectedRoute to just render children for test simplicity
+// Mock ProtectedRoute to just render children, so routing works in tests
 jest.mock('../auth/ProtectedRoute', () => ({ children }: { children: React.ReactNode }) => <>{children}</>);
 
 describe('App Routing', () => {
   beforeEach(() => {
-    // Reset any previous history state before each test
+    // Always start at root path before each test to avoid state leaks across tests
     window.history.pushState({}, '', '/');
   });
 
+  /*
+    Each test pushes a route to the browser history, renders <App />,
+    and checks if the mocked component for that route is present in the DOM.
+    This verifies that routing is set up to render the right pages.
+  */
+
   it('renders Login component on /login route', () => {
-    window.history.pushState({}, '', '/login');
+    window.history.pushState({}, '', '/login'); // Simulate /login route
     render(<App />);
     expect(screen.getByText(/Login Component/i)).toBeInTheDocument();
   });
 
   it('renders Navbar and JDInput on / route', () => {
-    window.history.pushState({}, '', '/');
+    window.history.pushState({}, '', '/'); // Simulate "/"
     render(<App />);
     expect(screen.getByText(/Navbar Component/i)).toBeInTheDocument();
     expect(screen.getByText(/JDInput Component/i)).toBeInTheDocument();
