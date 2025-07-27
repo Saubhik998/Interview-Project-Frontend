@@ -171,4 +171,3 @@ docker-compose up --build
 | Build & run Docker Compose   | `docker-compose up --build`                       |             |
 | Expose on http (Docker)      | visit [http://localhost:3000](http://localhost:3000) |
 
-**For further technical details, review the source files and tests as documented. For feedback or contributions, please follow your team’s established workflow or contact the maintainer.**
