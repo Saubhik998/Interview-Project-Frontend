@@ -75,7 +75,7 @@ describe('Navbaar Component', () => {
 
     // Check email visible
     expect(screen.getByText(/test@example.com/i)).toBeInTheDocument();
-    // View Past Reports button (likely an <a> or <Link>)
+    // View Past Reports button (likely an <a> or<link>)
     expect(screen.getByRole('link', { name: /view past reports/i })).toBeInTheDocument();
   });
 

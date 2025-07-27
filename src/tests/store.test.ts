@@ -10,7 +10,7 @@ describe('Redux Store', () => {
   });
 
   it('should allow dispatching actions to slices', () => {
-    // This tests dispatching to both slices with dummy actions.
+    // This tests dispatching to both slices with dummy actions
     // You would replace with real actions if available.
     const testAuthAction = { type: 'auth/login', payload: { user: 'test' } };
     const testInterviewAction = { type: 'interview/start', payload: { sessionId: 'abc' } };

@@ -97,7 +97,7 @@ describe('JDInput Component', () => {
     // Click the 'Start Interview' button
     fireEvent.click(screen.getByRole('button', { name: /start interview/i }));
 
-    // Assert: Axios call should be triggered with email and JD
+    // Assert Axios call should be triggered with email and JD
     await waitFor(() => {
       expect(mockedAxios.post).toHaveBeenCalledWith('/interview/init', {
         jobDescription: 'Frontend developer',

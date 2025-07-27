@@ -52,7 +52,7 @@ describe('Login Component', () => {
     const emailInput = screen.getByLabelText(/email address/i);
     const loginButton = screen.getByRole('button', { name: /login/i });
 
-    // Simulate user typing email and clicking login
+    // Simulate user typing email and clicking-login
     fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
     fireEvent.click(loginButton);
 
