@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import Report from '../components/Report';
 import api from '../api';
 
-// ----- html2pdf.js mock 
+// -- html2pdf.js mock 
 jest.mock('html2pdf.js', () => ({
   __esModule: true,
   default: jest.fn(() => ({

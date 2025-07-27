@@ -1,150 +1,174 @@
-# AI-AudioInterviewer Frontend
+# AudioInterviewer Frontend  
+## Comprehensive Project Report & README
 
-## What is this?
+### Table of Contents
+- [1. Overview](#1-overview)
+- [2. Features](#2-features)
+- [3. Project Structure](#3-project-structure)
+- [4. Core Functionality](#4-core-functionality)
+  - [4.1 Authentication Flow](#41-authentication-flow)
+  - [4.2 Interview Workflow](#42-interview-workflow)
+  - [4.3 Reports & PDF/Audio Exports](#43-reports--pdfaudio-exports)
+- [5. Testing](#5-testing)
+  - [5.1 Test Strategy](#51-test-strategy)
+  - [5.2 Running Tests](#52-running-tests)
+  - [5.3 Coverage Report](#53-coverage-report)
+- [6. Running the Project](#6-running-the-project)
+  - [6.1 Local Development](#61-local-development)
+  - [6.2 Dockerization](#62-dockerization)
+- [7. Environment Variables & Configuration](#7-environment-variables--configuration)
 
-AI-AudioInterviewer Frontend is a React and TypeScript single-page application that serves as the user interface for the AudioInterviewer platform. It allows users to:
+## 1. Overview
 
-* Log in and authenticate
-* Input job descriptions
-* Conduct and record mock interviews
-* View and download past interview reports
+**AudioInterviewer Frontend** is a React + Redux-based single-page application that enables users to simulate job interviews with audio and text-based questions, generate session reports, and export session data as PDFs or audio files. It is containerized with Docker for consistent deployment and leverages modern front-end best practices for state, API, and user flow management.
 
-The frontend communicates with a backend API (ASP.NET Core) and other services over HTTP.
+## 2. Features
 
----
+- **Authentication**: Secure email-based login and session management.
+- **Interview Workflow**: Stepwise question/answer UI with audio input/output.
+- **Report Generation**: After the interview, generate and view rich transcript and analytics.
+- **Export Options**: Download session summaries as PDF; access audio answers.
+- **Past Reports**: View, search, and deep-dive into prior interviews.
+- **Robust Testing**: Extensive unit and integration test coverage for logic and UI states.
+- **Containerized Deployment**: Easily run and orchestrate with Docker Compose.
 
-## Features
-
-* **React & TypeScript**: Strong typing and modular components
-* **Redux Toolkit**: Centralized state management for interview data
-* **React Router**: Client-side routing for multiple views
-* **Axios**: API client with a configurable base URL
-* **Jest & React Testing Library**: Unit and integration tests covering key flows
-* **Docker & Docker Compose**: Containerized for easy deployment
-
----
-
-## Directory Structure
+## 3. Project Structure
 
 ```
-AudioInterviewer-Frontend/
-├── Dockerfile                # Docker image definition
-├── docker-compose.yml        # Compose setup for multi-container dev
-├── public/                   # Static files
-│   ├── index.html            # Main HTML
-│   ├── favicon.ico
-│   ├── logo192.png
-│   └── robots.txt
-├── src/                      # Application source code
-│   ├── api/                  # Axios instance (baseURL configuration)
-│   │   └── index.ts
-│   ├── assets/               # Images and static assets (e.g., bg.png)
-│   ├── auth/                 # Authentication components and routes
-│   │   ├── Login.tsx
-│   │   └── ProtectedRoute.tsx
-│   ├── components/           # UI components
-│   │   ├── Navbar.tsx
-│   │   ├── JDInput.tsx
-│   │   ├── Interview.tsx
-│   │   ├── Report.tsx
-│   │   ├── PastReports.tsx
-│   │   └── ReportDetails.tsx
-│   ├── redux/                # Redux Toolkit slices and store
-│   │   ├── interviewSlice.ts
-│   │   └── store.ts
-│   ├── types/                # Type declarations
-│   │   └── html2pdf.d.ts
-│   ├── tests/                # Unit and integration tests
-│   │   └── *.test.tsx
-│   ├── App.tsx               # Root component and routes
-│   ├── index.tsx             # App entry point
-│   ├── setupTests.ts         # Jest setup
-│   └── reportWebVitals.ts    # Performance metrics
-└── package.json              # NPM scripts and dependencies
+
+src/
+  App.tsx
+  components/        # UI components (Login, Navbar, Interview, Reports etc)
+  redux/             # Redux slices (authSlice, interviewSlice, etc.)
+  api/               # API utilities 
+  auth/              # Login.tsx & protected route logic
+  tests/             # Unit tests            
+Dockerfile           # Frontend container specification
+docker-compose.yml   # Compose file 
+public/              # Static assets (index.html, favicon)
+README.md            # This documentation/report
 ```
 
----
+## 4. Core Functionality
 
-## Prerequisites
-* **React** 
-* **npm** 
-* **Docker**
+### 4.1 Authentication Flow
+- **Login**:
+  - Users enter email credentials.
+  - State managed by `authSlice`.
+  - Post-login, user info persists for the session.
+- **Protected Routes**:
+  - Only authenticated users can access interview, report, and report details routes.
+  - Redirection logic ensures unauthorized users are routed to login.
 
-### Installation
+### 4.2 Interview Workflow
+- **JD Input**:
+  - User begins by submitting the Job Description (JD).
+  - Triggers API request (mocked in dev/test) for interview session initialization.
+- **Question/Answer Flow**:
+  - Questions progress sequentially.
+  - Answers can be typed or input via microphone/audio APIs.
+  - State managed in `interviewSlice` (immutable/atomic updates).
+- **Session Handling**:
+  - Handles errors (e.g., API/network failures) with alerts to the user.
+  - Session data is utilized to render subsequent components and generate reports.
 
-1. Clone this repository:
+### 4.3 Reports & PDF/Audio Exports
+- **Report Generation**:
+  - Summarizes each session’s transcript, responses, and analysis.
+  - Allows for PDF download (via `html2pdf.js`) and audio playback.
+- **Past Reports**:
+  - Lists all previous interviews.
+  - Allows navigation to plat reports with full session details and audio answers.
 
-   ```bash
-   git clone <https://github.com/Saubhik998/Interview-Project-Frontend>
-   ```
+## 5. Testing
 
-2. Install dependencies:
+### 5.1 Test Strategy
 
-   ```bash
-   npm install
-   ```
+- **Unit Tests**: Validate Redux slices and reducers (`authSlice`, `interviewSlice`).
+- **Integration/Component Tests**: Simulate user flows, UI states, API calls with React Testing Library.
+- **Mocking**: All side effects (API, audio, PDF generation, navigation) are mocked for stable, deterministic testing.
 
-### Running Locally
+#### Key Areas Covered:
+- Routing and routing protection logic
+- UI state for all critical components (loading, errors, success)
+- Redux state management and side effects
+- API and side-effect mocking: navigation, pdf/audio, browser APIs
 
-To start the development server:
+### 5.2 Running Tests
 
-```bash
+All tests use Jest and React Testing Library.
+
+```sh
+# Install dependencies (if not already done)
+npm install
+
+# Run full test suite
+npm test
+
+# For continuous watch mode (optional)
+npm test -- --watchAll
+```
+
+### 5.3 Coverage Report
+
+```sh
+# Generate code coverage report (HTML summary in /coverage)
+npm run test:coverage
+
+Coverage report :-  ![coverage-report](coverage-report.png)
+
+# View summary in terminal, full report in coverage/lcov-report/index.html
+```
+
+## 6. Running the Project
+
+### 6.1 Local Development
+
+```sh
+# 1. Install dependencies
+npm install
+
+# 2. Start the local development server (default: http://localhost:3000)
 npm start
 ```
 
-The app will be available at [http://localhost:3000](http://localhost:3000).
+### 6.2 Dockerization
 
-### Running Tests
+#### Building with Docker
 
-Execute the test suite with:
+```sh
+# 1. Ensure the 'app-network' Docker network exists (only needed once)
+docker network create app-network
 
-```bash
-npm test
-
-```
-
-This runs Jest in watch mode and reports on code coverage.
-
----
-
-## Docker
-
-### Build and Run with Docker
-
-1. Build the Docker image:
-
-   ```bash
-   docker build -t audio-interviewer-frontend .
-   ```
-
-2. Run a container:
-
-   ```bash
-   docker run -p 3000:80 audio-interviewer-frontend
-   ```
-
-This serves the production build on port 3000.
-
-### Using Docker Compose
-
-A `docker-compose.yml` is provided for an integrated dev setup:
-
-```bash
+# 2. Build and run using Docker Compose
 docker-compose up --build
+
+# Access the frontend at http://localhost:3000
 ```
 
-This command spins up the frontend container (and any linked services defined).
+#### Notes:
+- The app container will be named `audio-interviewer-frontend`.
+- Container port 80 is mapped to host port 3000 for development convenience.
 
----
+## 7. Environment Variables & Configuration
 
-## How It Works
-
-1. **Authentication**: Users log in via `auth/Login.tsx`. Protected routes use `ProtectedRoute.tsx`.
-2. **Job Description Input**: `JDInput.tsx` captures a description, triggering an interview session.
-3. **Interview Flow**: `Interview.tsx` handles recording audio, sending it to the backend, and updating state via Redux.
-4. **Report Generation**: After completion, `Report.tsx` renders results; past reports live in `PastReports.tsx`.
-5. **State Management**: Redux slice in `redux/interviewSlice.ts` tracks questions, answers, and scores.
-
----
+- The frontend can be configured to use specific API endpoints via `.env` or Compose `environment` keys.
+- **Common variables** (example):
+  ```
+  REACT_APP_API_URL=http://localhost:7080/api
+  ```
+- To add variables, update `.env` at the project root and restart the development server or rebuild the container.
 
 
+## Quick Summary Table
+
+| Task                         | Command/Action                                    |
+|------------------------------|---------------------------------------------------|
+| Install dependencies         | `npm install`                                     |
+| Start dev server             | `npm start`                                       |
+| Run all tests                | `npm test`                                        |
+| Coverage report              | `npm run test:coverage`                          |
+| Build & run Docker Compose   | `docker-compose up --build`                       |             |
+| Expose on http (Docker)      | visit [http://localhost:3000](http://localhost:3000) |
+
+**For further technical details, review the source files and tests as documented. For feedback or contributions, please follow your team’s established workflow or contact the maintainer.**

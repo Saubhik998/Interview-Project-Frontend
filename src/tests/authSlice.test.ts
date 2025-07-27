@@ -1,4 +1,4 @@
-import reducer, { AuthState, login, logout } from '../redux/authSlice';
+import reducer, { AuthState, login, logout } from '../redux/authSlice';//test authSlice.ts
 
 describe('authSlice', () => {
   const initialState: AuthState = {

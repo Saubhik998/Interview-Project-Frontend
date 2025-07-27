@@ -43,7 +43,7 @@ class MockSpeechSynthesisUtterance {
   continuous: false,
   interimResults: false,
 }));
-// getUserMedia on mediaDevices (Node can't override navigator.mediaDevices itself)
+// getUserMedia on mediaDevices (Node can't override navigator.mediaDevices itself
 if (!navigator.mediaDevices) {
   Object.defineProperty(navigator, 'mediaDevices', {
     value: {},
