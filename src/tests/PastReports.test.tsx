@@ -166,7 +166,7 @@ describe('PastReports Component', () => {
       renderWithStore(baseState);
     });
 
-    // Wait for the "no reports found" message using test email
+    
     expect(
       await screen.findByText(/no reports found for test@example.com/i)
     ).toBeInTheDocument();
