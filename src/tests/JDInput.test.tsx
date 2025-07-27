@@ -105,7 +105,7 @@ describe('JDInput Component', () => {
       });
     });
 
-    // Assert: react-router navigate should go to /interview
+    
     await waitFor(() => {
       expect(mockedNavigate).toHaveBeenCalledWith('/interview');
     });

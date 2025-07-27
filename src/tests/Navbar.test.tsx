@@ -94,7 +94,7 @@ describe('Navbaar Component', () => {
     const link = screen.getByRole('link', { name: /view past reports/i });
     fireEvent.click(link);
 
-    // If this <a> or <Link> has href, check it:
+    
     expect(link).toHaveAttribute('href', '/reports');
     // If Navbaar uses navigate('/reports'), you could also check:
     // expect(mockedNavigate).toHaveBeenCalledWith('/reports');

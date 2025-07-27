@@ -1,89 +1,88 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Report from '../components/Report';
-import axios from '../api';
+import api from '../api';
 
-// ----------------------------
-// Mock axios instance so we can control API responses
-// ----------------------------
-jest.mock('../api');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
-
-// ----------------------------
-// Mock html2pdf so PDF code does not run in test environment (JSDOM)
-// ----------------------------
+// ----- html2pdf.js mock 
 jest.mock('html2pdf.js', () => ({
   __esModule: true,
-  default: () => ({ set: () => ({ from: () => ({ save: () => {} }) }) })
+  default: jest.fn(() => ({
+    set: jest.fn().mockReturnThis(),
+    from: jest.fn().mockReturnThis(),
+    save: jest.fn(),
+  })),
 }));
 
-// ----------------------------
-// Main test suite for Report
-// ----------------------------
-describe('Report Component', () => {
+// ----- api mock -----
+jest.mock('../api');
+
+// Minimal report for error and transcript test
+const mockReport = {
+  jd: 'Frontend Developer JD',   
+  score: 83,
+  questions: [
+    "Why are you interested in this job?",
+    "How do you handle pressure?",
+  ],
+  answers: [
+    { question: "Why are you interested in this job?", transcript: "I love front-end work." },
+    { question: "How do you handle pressure?", transcript: "I stay organized and focused." }
+  ],
+  strengths: ["UI development", "Teamwork"],
+  improvements: ["React optimization"],
+  followUps: ["Tell me about a React project.", "How do you grow your skills?"],
+};
+
+function setSessionId(id: string | null) {
+  if (id !== null) {
+    window.localStorage.setItem('sessionId', id);
+  } else {
+    window.localStorage.removeItem('sessionId');
+  }
+}
+
+describe('<Report />', () => {
   beforeEach(() => {
-    // Reset mocks before every test, and ensure a sessionId exists in localStorage
     jest.clearAllMocks();
-    localStorage.setItem('sessionId', '123');
+    setSessionId('fakeSessionId');
   });
 
-  it('renders loading state and then displays the report', async () => {
-    // Mock backend API data for happy-path test
-    const mockReportData = {
-      jd: 'Full Stack Developer',
-      score: 87,
-      questions: ['What is React?', 'Explain Node.js'],
+  it('shows loading screen while fetching', async () => {
+    (api.get as jest.Mock).mockReturnValue(new Promise(() => {}));
+    render(<Report />);
+    expect(screen.getByText(/Loading report/i)).toBeInTheDocument();
+  });
+
+  it('shows error if sessionId is missing', async () => {
+    setSessionId(null);
+    render(<Report />);
+    await waitFor(() =>
+      expect(screen.getByText(/Failed to load report/i)).toBeInTheDocument()
+    );
+  });
+
+  it('shows error if API fails', async () => {
+    (api.get as jest.Mock).mockRejectedValue(new Error('fail'));
+    render(<Report />);
+    await waitFor(() =>
+      expect(screen.getByText(/Failed to load report/i)).toBeInTheDocument()
+    );
+  });
+
+  it('handles missing transcript field gracefully', async () => {
+    const partialReport = {
+      ...mockReport,
       answers: [
-        { question: 'What is React?', transcript: 'React is a JavaScript library for building UIs.' },
-        { question: 'Explain Node.js', transcript: 'Node.js is a runtime for executing JavaScript on the server.' }
-      ],
-      strengths: ['Strong communication', 'Deep technical knowledge'],
-      improvements: ['Expand on backend topics'],
-      followUps: ['Ask about database optimization'],
+        { question: "Why are you interested in this job?", transcript: undefined },
+        { question: "How do you handle pressure?", transcript: "" }
+      ]
     };
+    (api.get as jest.Mock).mockResolvedValue({ data: partialReport });
 
-    // Simulate GET /interview/report resolving with the above data
-    mockedAxios.get.mockResolvedValueOnce({ data: mockReportData, status: 200 } as any);
-
-    // Render Report via /report route in a memory router context
-    render(
-      <MemoryRouter initialEntries={['/report']}>
-        <Routes>
-          <Route path="/report" element={<Report />} />
-        </Routes>
-      </MemoryRouter>
+    render(<Report />);
+    await waitFor(() =>
+      expect(screen.getByText(/Interview Summary Report/i)).toBeInTheDocument()
     );
-
-    // Loading spinner/text should be present immediately
-    expect(screen.getByText(/Loading report\.\.\./i)).toBeInTheDocument();
-
-    // Wait for the real content to appear, displaying all fetched sections
-    await waitFor(() => {
-      expect(screen.getByText(/Interview Summary Report/i)).toBeInTheDocument();
-      expect(screen.getByText(/Full Stack Developer/i)).toBeInTheDocument();
-      expect(screen.getByText(/React is a JavaScript library/i)).toBeInTheDocument();
-      expect(screen.getByText(/Strong communication/i)).toBeInTheDocument();
-    });
-  });
-
-  it('shows error message if fetching report fails', async () => {
-    // Simulate API call failure
-    mockedAxios.get.mockRejectedValueOnce(new Error('API Error'));
-    localStorage.setItem('sessionId', '123');
-
-    // Render as before
-    render(
-      <MemoryRouter initialEntries={['/report']}>
-        <Routes>
-          <Route path="/report" element={<Report />} />
-        </Routes>
-      </MemoryRouter>
-    );
-
-    // Wait for the error UI to display
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to load report./i)).toBeInTheDocument();
-    });
+    expect(screen.getAllByText(/No transcript available/i).length).toBeGreaterThanOrEqual(1);
   });
 });

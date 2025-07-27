@@ -56,7 +56,7 @@ describe('Login Component', () => {
     fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
     fireEvent.click(loginButton);
 
-    // Assert navigation to home page ("/") triggered after login
+    
     expect(mockNavigate).toHaveBeenCalledWith('/');
 
     // Check the Redux state is updated correctly
