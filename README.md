@@ -115,7 +115,7 @@ npm test -- --watchAll
 # Generate code coverage report (HTML summary in /coverage)
 npm run test:coverage
 
-Coverage report :-  ![coverage-report](coverage-report.png)
+Coverage report :-  ![coverage-report](coverage-report.jpg)
 
 # View summary in terminal, full report in coverage/lcov-report/index.html
 ```

@@ -6,7 +6,7 @@ import api from '../api';
 
 jest.mock('html2canvas', () => jest.fn());
 
-// The PDF download/unit test is removed to avoid_jspdf.default is not a constructor TS error
+//  The PDF download/unit test is removed to avoid_jspdf.default is not a constructor TS error
 
 jest.mock('../api');
 
