@@ -142,7 +142,7 @@ describe('PastReports Component', () => {
       renderWithStore(baseState);
     });
 
-    // Wait for report torender
+    //  Wait for report torender
     await waitFor(() => {
       expect(screen.getByText(/QA Engineer/i)).toBeInTheDocument();
     });

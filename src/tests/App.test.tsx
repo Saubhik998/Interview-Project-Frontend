@@ -7,7 +7,7 @@ import authReducer from '../redux/authSlice';
 import interviewReducer from '../redux/interviewSlice';
 import { RootState } from '../redux/store';
 
-//  Mock ProtectedRoute to render children only (for test simplification)
+// Mock ProtectedRoute to render children only (for test simplification)
 jest.mock('../auth/ProtectedRoute', () => ({ children }: { children: React.ReactNode }) => <>{children}</>);
 
 //  Sample state for logged-in user
