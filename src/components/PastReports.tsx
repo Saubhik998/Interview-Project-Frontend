@@ -9,6 +9,7 @@ interface ReportData {
   _id: string;
   jobDescription: string;
   candidateFitScore: number;
+  createdAt?: string; // Optional in case of legacy data
 }
 
 /*
@@ -39,12 +40,9 @@ const PastReports: React.FC = () => {
       } catch (err) {
         console.error('Failed to fetch past reports:', err);
       } finally {
-        // Both success and failure will stop 'loading'
         setLoading(false);
       }
     };
-
-    // Only fetch if email exists in redux (user must be logged in)
     if (email) fetchReports();
   }, [email]);
 
@@ -75,36 +73,67 @@ const PastReports: React.FC = () => {
     );
   }
 
-  // Main display: map each report to a card with a 'View Full Report' button
+  // Main display: map each report to a card with a 'View Full Report' button,
+  // and sort so the most recent (largest createdAt) is first.
   return (
     <div className="container my-5">
       <h3 className="text-center mb-4">
         Past Interview Reports
       </h3>
 
-      {reports.map((report) => (
-        <div key={report._id} className="card shadow-sm mb-4 p-4 border-0">
-          <h6 className="text-muted mb-1">Job Description:</h6>
-          {/* Show truncated JD, with full text as title on hover */}
-          <p className="text-truncate mb-2" title={report.jobDescription}>
-            {report.jobDescription}
-          </p>
+      {[...reports]
+        .sort((a, b) => {
+          // Sort by createdAt descending. Legacy with no createdAt stay in original order after newest.
+          if (!a.createdAt && !b.createdAt) return 0;
+          if (!a.createdAt) return 1;
+          if (!b.createdAt) return -1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        })
+        .map((report) => {
+          // Handle the case where createdAt might not be present (legacy data)
+          let dateInfo = null;
+          if (report.createdAt) {
+            const dateObj = new Date(report.createdAt);
+            const formattedDate = dateObj.toLocaleDateString();
+            const formattedTime = dateObj.toLocaleTimeString();
+            dateInfo = (
+              <div className="mb-2 text-secondary fw-light small">
+                <strong>Date:</strong> {formattedDate} &nbsp;|&nbsp;
+                <strong>Time:</strong> {formattedTime}
+              </div>
+            );
+          } else {
+            dateInfo = (
+              <div className="mb-2 text-secondary fw-light small">
+                <strong>Date:</strong> Not Available
+              </div>
+            );
+          }
 
-          <h6 className="text-primary mb-3">
-            Candidate Fit Score: {report.candidateFitScore} / 100
-          </h6>
+          return (
+            <div key={report._id} className="card shadow-sm mb-4 p-4 border-0">
+              {dateInfo}
 
-          <div className="text-end">
-            <button
-              className="btn btn-outline-primary"
-              // Navigate to the detailed report page with this report's id
-              onClick={() => navigate(`/report/${report._id}`)}
-            >
-              View Full Report
-            </button>
-          </div>
-        </div>
-      ))}
+              <h6 className="text-muted mb-1">Job Description:</h6>
+              <p className="text-truncate mb-2" title={report.jobDescription}>
+                {report.jobDescription}
+              </p>
+
+              <h6 className="text-primary mb-3">
+                Candidate Fit Score: {report.candidateFitScore} / 100
+              </h6>
+
+              <div className="text-end">
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() => navigate(`/report/${report._id}`)}
+                >
+                  View Full Report
+                </button>
+              </div>
+            </div>
+          );
+        })}
     </div>
   );
 };
