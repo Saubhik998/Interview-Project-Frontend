@@ -49,7 +49,7 @@ describe('interviewSlice', () => {
       audio: 'audio-url',
       transcript: 'transcribed text'
     });
-    // answers array remains sparse if previous indices not-set
+    //answers array remains sparse if previous indices not-set
     expect(Array.isArray(nextState.answers)).toBe(true);
   });
 

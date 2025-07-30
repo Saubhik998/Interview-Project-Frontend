@@ -5,9 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: frontend-audio-interviewer
     ports:
-      - "3000:80"
-    container_name: audio-interviewer-frontend
+      - "8080:80"
+    restart: unless-stopped
     networks:
       - app-network
 

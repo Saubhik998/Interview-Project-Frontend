@@ -73,7 +73,7 @@ describe('Navbaar Component', () => {
   it('shows email and View Past Reports button when logged in', () => {
     renderWithStore(loggedInState);
 
-    // Check email visible
+    //  Check email visible
     expect(screen.getByText(/test@example.com/i)).toBeInTheDocument();
     // View Past Reports button (likely an <a> or<link>)
     expect(screen.getByRole('link', { name: /view past reports/i })).toBeInTheDocument();
