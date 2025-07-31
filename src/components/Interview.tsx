@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
 import styles from '../css/Interview.module.css';
-import api from '../api';
+import axios from 'axios';
 
 // ----------- Interfaces for backend API responses and payloads -----------
 
@@ -57,7 +57,7 @@ const Interview: React.FC = () => {
     (async () => {
       try {
         // POST to backend. Pass email and job description. Expect sessionId and first question.
-        const res = await api.post<InitResponse>('/Interview/init', { email, jobDescription: jd });
+        const res = await axios.post<InitResponse>('http://192.168.6.154:5035/api/Interview/init', { email, jobDescription: jd });
         const { sessionId, firstQuestion } = res.data;
         setSessionId(sessionId);
         // Store in localStorage so we can retrieve this session later for the report
@@ -181,9 +181,9 @@ const Interview: React.FC = () => {
 
         try {
           // Upload answer
-          await api.post('/Interview/answer', payload);
+          await axios.post('http://192.168.6.154:5035/api/Interview/answer', payload);
           // Get the next interview question, if any
-          const { data } = await api.get<QuestionResponse>('/Interview/question', { params: { sessionId } });
+          const { data } = await axios.get<QuestionResponse>('http://192.168.6.154:5035/api/Interview/question', { params: { sessionId } });
           if (data.question) {
             // Continue to next question
             setCurrentQuestion(data.question);
@@ -221,7 +221,7 @@ const Interview: React.FC = () => {
 
   // Handle final interview completion: send status and route to report
   const completeInterview = async () => {
-    try { await api.post('/Interview/complete', null, { params: { sessionId } }); } catch { }
+    try { await axios.post('http://192.168.6.154:5035/api/Interview/complete', null, { params: { sessionId } }); } catch { }
     setInterviewEnded(true);
     setCurrentQuestion('');
     alert('Interview finished!');
