@@ -57,7 +57,7 @@ const Interview: React.FC = () => {
     (async () => {
       try {
         // POST to backend. Pass email and job description. Expect sessionId and first question.
-        const res = await api.post<InitResponse>('/interview/init', { email, jobDescription: jd });
+        const res = await api.post<InitResponse>('/Interview/init', { email, jobDescription: jd });
         const { sessionId, firstQuestion } = res.data;
         setSessionId(sessionId);
         // Store in localStorage so we can retrieve this session later for the report
@@ -181,9 +181,9 @@ const Interview: React.FC = () => {
 
         try {
           // Upload answer
-          await api.post('/interview/answer', payload);
+          await api.post('/Interview/answer', payload);
           // Get the next interview question, if any
-          const { data } = await api.get<QuestionResponse>('/interview/question', { params: { sessionId } });
+          const { data } = await api.get<QuestionResponse>('/Interview/question', { params: { sessionId } });
           if (data.question) {
             // Continue to next question
             setCurrentQuestion(data.question);
@@ -221,7 +221,7 @@ const Interview: React.FC = () => {
 
   // Handle final interview completion: send status and route to report
   const completeInterview = async () => {
-    try { await api.post('/interview/complete', null, { params: { sessionId } }); } catch { }
+    try { await api.post('/Interview/complete', null, { params: { sessionId } }); } catch { }
     setInterviewEnded(true);
     setCurrentQuestion('');
     alert('Interview finished!');
