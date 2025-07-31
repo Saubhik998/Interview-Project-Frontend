@@ -143,7 +143,7 @@ docker network create app-network
 # 2. Build and run using Docker Compose
 docker-compose up --build
 
-# Access the frontend at http://localhost:3000
+# Access the frontend at http://localhost:8080
 ```
 
 #### Notes:
@@ -168,6 +168,6 @@ docker-compose up --build
 | Start dev server             | `npm start`                                       |
 | Run all tests                | `npm test`                                        |
 | Coverage report              | `npm run test:coverage`                          |
-| Build & run Docker Compose   | `docker-compose up --build`                       |             |
-| Expose on http (Docker)      | visit [http://localhost:3000](http://localhost:3000) |
+| Build & run Docker Compose   | `docker compose up --build`                       |             |
+| Expose on http (Docker)      | visit [http://localhost:8080](http://localhost:8080) |
 
