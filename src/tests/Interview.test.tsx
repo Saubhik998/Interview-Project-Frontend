@@ -4,7 +4,19 @@ import Interview from '../components/Interview';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import configureStore from 'redux-mock-store';
-import api from '../api';
+import axios from 'axios'; // ✅ Imported directly
+
+jest.mock('axios'); // ✅ Mocking axios instead of api
+
+const BASE_URL = 'http://192.168.6.154:5035/api/Interview';
+
+const mockStore = configureStore([]);
+const mockNavigate = jest.fn();
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate,
+}));
 
 if (typeof (global as any).MediaStream === 'undefined') {
   (global as any).MediaStream = function () { return {}; };
@@ -32,11 +44,9 @@ class MockSpeechSynthesisUtterance {
   public pitch: number = 1;
   public rate: number = 1;
   public voice: any;
-  private _onstart: (() => void) | null = null;
-  private _onend: (() => void) | null = null;
   constructor(text: string) { this.text = text; }
-  set onstart(fn: (() => void) | null) { this._onstart = fn; if (fn) setTimeout(fn, 0); }
-  set onend(fn: (() => void) | null) { this._onend = fn; if (fn) setTimeout(fn, 10); }
+  set onstart(fn: (() => void) | null) { if (fn) setTimeout(fn, 0); }
+  set onend(fn: (() => void) | null) { if (fn) setTimeout(fn, 10); }
 }
 (global as any).SpeechSynthesisUtterance = MockSpeechSynthesisUtterance;
 (global as any).speechSynthesis = {
@@ -66,14 +76,6 @@ Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
   value: jest.fn().mockResolvedValue(new (global as any).MediaStream()),
 });
 
-jest.mock('../api');
-const mockStore = configureStore([]);
-const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-}));
-
 describe('Interview component', () => {
   let store: any;
 
@@ -82,8 +84,8 @@ describe('Interview component', () => {
       auth: { email: 'test@example.com' },
       interview: { jd: 'Test Job' }
     });
-    (api.post as jest.Mock).mockReset();
-    (api.get as jest.Mock).mockReset();
+    (axios.post as jest.Mock).mockReset();
+    (axios.get as jest.Mock).mockReset();
     (navigator.mediaDevices.getUserMedia as jest.Mock).mockReset();
     (navigator.mediaDevices.getUserMedia as jest.Mock).mockResolvedValue(new (global as any).MediaStream());
     jest.clearAllMocks();
@@ -91,7 +93,7 @@ describe('Interview component', () => {
   });
 
   it('initializes session and loads first question', async () => {
-    (api.post as jest.Mock).mockResolvedValue({
+    (axios.post as jest.Mock).mockResolvedValue({
       data: { sessionId: 'sid123', firstQuestion: 'First Q?' },
     });
 
@@ -103,8 +105,8 @@ describe('Interview component', () => {
       </Provider>
     );
 
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith(
-      '/interview/init',
+    await waitFor(() => expect(axios.post).toHaveBeenCalledWith(
+      `${BASE_URL}/init`,
       { email: 'test@example.com', jobDescription: 'Test Job' }
     ));
 
@@ -112,7 +114,7 @@ describe('Interview component', () => {
   });
 
   it('shows alert on init error', async () => {
-    (api.post as jest.Mock).mockRejectedValue(new Error('fail'));
+    (axios.post as jest.Mock).mockRejectedValue(new Error('fail'));
     jest.spyOn(window, 'alert').mockImplementation(() => {});
 
     render(
@@ -122,14 +124,18 @@ describe('Interview component', () => {
         </MemoryRouter>
       </Provider>
     );
+
     await waitFor(() => {
-      expect(api.post).toHaveBeenCalled();
+      expect(axios.post).toHaveBeenCalledWith(
+        `${BASE_URL}/init`,
+        { email: 'test@example.com', jobDescription: 'Test Job' }
+      );
       expect(window.alert).toHaveBeenCalledWith('Failed to start interview.');
     });
   });
 
   it('transitions from TTS to recording after speech ends', async () => {
-    (api.post as jest.Mock).mockResolvedValue({
+    (axios.post as jest.Mock).mockResolvedValue({
       data: { sessionId: 'sid123', firstQuestion: 'Speaking Test' },
     });
 
@@ -150,11 +156,11 @@ describe('Interview component', () => {
   });
 
   it('submits answer and fetches next question', async () => {
-    (api.post as jest.Mock).mockResolvedValueOnce({
+    (axios.post as jest.Mock).mockResolvedValueOnce({
       data: { sessionId: 'sid123', firstQuestion: 'Q1?' },
     });
-    (api.post as jest.Mock).mockResolvedValueOnce({});
-    (api.get as jest.Mock).mockResolvedValueOnce({
+    (axios.post as jest.Mock).mockResolvedValueOnce({});
+    (axios.get as jest.Mock).mockResolvedValueOnce({
       data: { index: 2, question: 'Q2?' },
     });
 
@@ -188,7 +194,7 @@ describe('Interview component', () => {
   });
 
   it('alerts if recorded answer is too short', async () => {
-    (api.post as jest.Mock).mockResolvedValueOnce({
+    (axios.post as jest.Mock).mockResolvedValueOnce({
       data: { sessionId: 'sid123', firstQuestion: 'Too Short?' },
     });
 
@@ -226,7 +232,7 @@ describe('Interview component', () => {
   });
 
   it('cleans up on unmount', async () => {
-    (api.post as jest.Mock).mockResolvedValue({
+    (axios.post as jest.Mock).mockResolvedValue({
       data: { sessionId: 'sid123', firstQuestion: 'Any Q?' },
     });
 
@@ -244,11 +250,11 @@ describe('Interview component', () => {
   });
 
   it('handles unexpected error when fetching next question', async () => {
-    (api.post as jest.Mock).mockResolvedValueOnce({
+    (axios.post as jest.Mock).mockResolvedValueOnce({
       data: { sessionId: 'sid123', firstQuestion: 'Q1?' },
     });
-    (api.post as jest.Mock).mockResolvedValueOnce({});
-    (api.get as jest.Mock).mockRejectedValueOnce(new Error('unexpected'));
+    (axios.post as jest.Mock).mockResolvedValueOnce({});
+    (axios.get as jest.Mock).mockRejectedValueOnce(new Error('unexpected'));
 
     jest.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -272,7 +278,7 @@ describe('Interview component', () => {
   });
 
   it('handles FileReader error', async () => {
-    (api.post as jest.Mock).mockResolvedValueOnce({
+    (axios.post as jest.Mock).mockResolvedValueOnce({
       data: { sessionId: 'sid123', firstQuestion: 'Faulty Reader?' },
     });
 
@@ -301,7 +307,7 @@ describe('Interview component', () => {
   });
 
   it('handles speech recognition start failure', async () => {
-    (api.post as jest.Mock).mockResolvedValue({
+    (axios.post as jest.Mock).mockResolvedValue({
       data: { sessionId: 'sid123', firstQuestion: 'Recog Fail?' },
     });
 
@@ -335,7 +341,7 @@ describe('Interview component', () => {
   });
 
   it('gracefully handles missing recorderRef', async () => {
-    (api.post as jest.Mock).mockResolvedValue({
+    (axios.post as jest.Mock).mockResolvedValue({
       data: { sessionId: 'sid123', firstQuestion: 'Missing Recorder' },
     });
 
