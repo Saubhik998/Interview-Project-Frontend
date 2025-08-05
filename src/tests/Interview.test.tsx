@@ -8,7 +8,7 @@ import axios from 'axios'; // ✅ Imported directly
 
 jest.mock('axios'); // ✅ Mocking axios instead of api
 
-const BASE_URL = 'http://192.168.6.154:5035/api/Interview';
+const BASE_URL = 'http://pip-interviewerapi.personalbrandingcouncil.com/api/Interview';
 
 const mockStore = configureStore([]);
 const mockNavigate = jest.fn();

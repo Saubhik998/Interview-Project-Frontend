@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://192.168.6.154:5035/api', 
+  baseURL: 'http://pip-interviewerapi.personalbrandingcouncil.com/api', 
 });
 
 export default api;
